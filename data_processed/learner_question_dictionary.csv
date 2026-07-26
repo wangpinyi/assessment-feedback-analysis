@@ -1,0 +1,35 @@
+original_variable,variable,question_text
+StartDate,start_date,Start Date
+EndDate,end_date,End Date
+Status,status,Response Type
+IPAddress,ip_address,IP Address
+Progress,progress,Progress
+Duration (in seconds),duration_in_seconds,Duration (in seconds)
+Finished,finished,Finished
+RecordedDate,recorded_date,Recorded Date
+ResponseId,response_id,Response ID
+RecipientLastName,recipient_last_name,Recipient Last Name
+RecipientFirstName,recipient_first_name,Recipient First Name
+RecipientEmail,recipient_email,Recipient Email
+ExternalReference,external_reference,External Data Reference
+LocationLatitude,location_latitude,Location Latitude
+LocationLongitude,location_longitude,Location Longitude
+DistributionChannel,distribution_channel,Distribution Channel
+UserLanguage,user_language,User Language
+Q2,q2,How many years of teaching experience do you have?
+Q5,q5,What's your gender?
+Q23,q23,What's your age?
+Q24,q24,"For Assignment #3, did you earn Mastery for your first submission?"
+Q14,q14,The grading criteria (rubric) was clear and well-aligned with the assignment.
+Q8,q8,The feedback I received was specific and relevant to my submission (not generic).
+Q9,q9,The feedback helped me understand what I did well and where I could improve.
+Q10,q10,I received my feedback in a timely manner.
+Q11,q11,"Overall, how would you rate the quality of the feedback you received on this assignment?"
+Q20,q20,What was the most valuable aspect of the grading and feedback process for this particular assignment?
+Q21,q21,"What, if any, changes to the grading or feedback process would most improve your learning experience?"
+Q6,q6,"How would you describe your prior experience with AI tools (e.g., AI writing assistants, grading tools, chatbots) before this course?"
+Q16,q16,Were you aware that an AI tool was used in helping provide feedback for this assignment?
+Q17,q17,I am comfortable with AI tools being used to provide feedback on my assignments.
+Q18,q18,I believe AI-generated feedback can be as useful as feedback from a human instructor for identifying areas of improvement.
+Q19,q19,Which of the following would best describe your preferred feedback model?
+Q22,q22,Is there anything else you would like us to know about your experience with AI in teaching and learning before you submit the survey?

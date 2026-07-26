@@ -1,0 +1,29 @@
+variable,valid_n,percent,response,n
+teaching_experience,170,22.9,0-3 years,39
+teaching_experience,170,22.4,11-20 years,38
+teaching_experience,170,25.3,20+ years,43
+teaching_experience,170,29.4,4-10 years,50
+gender,170,97.6,Female,166
+gender,170,1.8,Male,3
+gender,170,0.6,Prefer not to say,1
+age_group,170,25.9,31-40,44
+age_group,170,24.7,41-50,42
+age_group,170,33.5,50+,57
+age_group,170,15.3,<30,26
+age_group,170,0.6,Prefer not to say,1
+prior_ai_experience,170,8.8,Extensive experience,15
+prior_ai_experience,170,31.2,Minimal experience,53
+prior_ai_experience,170,25.9,No experience,44
+prior_ai_experience,170,34.1,Some experience,58
+ai_awareness,170,16.5,Not aware at all,28
+ai_awareness,170,19.4,Somewhat aware,33
+ai_awareness,170,64.1,"Yes, fully aware",109
+preferred_feedback_model,169,16.6,AI provides all feedback; human instructor reviews only disputed grades.,28
+preferred_feedback_model,169,26.6,AI provides initial feedback; human instructor reviews every submission before grades are final.,45
+preferred_feedback_model,169,39.1,Human instructor grades everything; AI is only used as a support tool for the instructor.,66
+preferred_feedback_model,169,17.8,I have no preference.,30
+preferred_feedback_model,169,,,1
+duration_flag,170,14.7,1 to under 2 minutes,25
+duration_flag,170,81.8,Not flagged,139
+duration_flag,170,2.9,Over 1 hour,5
+duration_flag,170,0.6,Under 1 minute,1

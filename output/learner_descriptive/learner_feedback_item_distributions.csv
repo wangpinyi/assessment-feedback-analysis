@@ -1,0 +1,21 @@
+item,response,n,valid_n,percent
+Rubric was clear and aligned,Strongly disagree,0,170,0
+Rubric was clear and aligned,Somewhat disagree,0,170,0
+Rubric was clear and aligned,Neither agree nor disagree,5,170,2.9
+Rubric was clear and aligned,Somewhat agree,20,170,11.8
+Rubric was clear and aligned,Strongly agree,145,170,85.3
+Feedback was specific and relevant,Strongly disagree,0,170,0
+Feedback was specific and relevant,Somewhat disagree,3,170,1.8
+Feedback was specific and relevant,Neither agree nor disagree,3,170,1.8
+Feedback was specific and relevant,Somewhat agree,14,170,8.2
+Feedback was specific and relevant,Strongly agree,150,170,88.2
+Feedback identified strengths and improvements,Strongly disagree,0,170,0
+Feedback identified strengths and improvements,Somewhat disagree,3,170,1.8
+Feedback identified strengths and improvements,Neither agree nor disagree,2,170,1.2
+Feedback identified strengths and improvements,Somewhat agree,17,170,10
+Feedback identified strengths and improvements,Strongly agree,148,170,87.1
+Feedback was timely,Strongly disagree,2,170,1.2
+Feedback was timely,Somewhat disagree,4,170,2.4
+Feedback was timely,Neither agree nor disagree,1,170,0.6
+Feedback was timely,Somewhat agree,25,170,14.7
+Feedback was timely,Strongly agree,138,170,81.2

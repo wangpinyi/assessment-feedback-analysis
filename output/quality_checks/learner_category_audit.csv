@@ -1,0 +1,58 @@
+variable,percent,response,n
+teaching_experience,22.9,0-3 years,39
+teaching_experience,22.4,11-20 years,38
+teaching_experience,25.3,20+ years,43
+teaching_experience,29.4,4-10 years,50
+gender,97.6,Female,166
+gender,1.8,Male,3
+gender,0.6,Prefer not to say,1
+age_group,25.9,31-40,44
+age_group,24.7,41-50,42
+age_group,33.5,50+,57
+age_group,15.3,<30,26
+age_group,0.6,Prefer not to say,1
+first_submission_mastery,7.6,"No, I didn't.",13
+first_submission_mastery,4.7,Unsure,8
+first_submission_mastery,87.6,"Yes, I did.",149
+rubric_clear_aligned,2.9,Neither agree nor disagree,5
+rubric_clear_aligned,11.8,Somewhat agree,20
+rubric_clear_aligned,85.3,Strongly agree,145
+feedback_specific_relevant,1.8,Neither agree nor disagree,3
+feedback_specific_relevant,8.2,Somewhat agree,14
+feedback_specific_relevant,1.8,Somewhat disagree,3
+feedback_specific_relevant,88.2,Strongly agree,150
+feedback_helped_improve,1.2,Neither agree nor disagree,2
+feedback_helped_improve,10,Somewhat agree,17
+feedback_helped_improve,1.8,Somewhat disagree,3
+feedback_helped_improve,87.1,Strongly agree,148
+feedback_timely,0.6,Neither agree nor disagree,1
+feedback_timely,14.7,Somewhat agree,25
+feedback_timely,2.4,Somewhat disagree,4
+feedback_timely,81.2,Strongly agree,138
+feedback_timely,1.2,Strongly disagree,2
+overall_feedback_quality,79.4,Excellent,135
+overall_feedback_quality,2.9,Fair,5
+overall_feedback_quality,17.1,Good,29
+overall_feedback_quality,0.6,Poor,1
+prior_ai_experience,8.8,Extensive experience,15
+prior_ai_experience,31.2,Minimal experience,53
+prior_ai_experience,25.9,No experience,44
+prior_ai_experience,34.1,Some experience,58
+ai_awareness,16.5,Not aware at all,28
+ai_awareness,19.4,Somewhat aware,33
+ai_awareness,64.1,"Yes, fully aware",109
+ai_comfort,17.6,Neither agree nor disagree,30
+ai_comfort,28.8,Somewhat agree,49
+ai_comfort,5.9,Somewhat disagree,10
+ai_comfort,44.1,Strongly agree,75
+ai_comfort,3.5,Strongly disagree,6
+ai_as_useful_as_human,15.3,Neither agree nor disagree,26
+ai_as_useful_as_human,32.4,Somewhat agree,55
+ai_as_useful_as_human,11.8,Somewhat disagree,20
+ai_as_useful_as_human,36.5,Strongly agree,62
+ai_as_useful_as_human,4.1,Strongly disagree,7
+preferred_feedback_model,16.5,AI provides all feedback; human instructor reviews only disputed grades.,28
+preferred_feedback_model,26.5,AI provides initial feedback; human instructor reviews every submission before grades are final.,45
+preferred_feedback_model,38.8,Human instructor grades everything; AI is only used as a support tool for the instructor.,66
+preferred_feedback_model,17.6,I have no preference.,30
+preferred_feedback_model,0.6,,1

@@ -1,0 +1,16 @@
+feature,result
+Primary variable,feedback_experience
+Primary variable type,Unit-weighted four-item mean/index
+Primary number of items,4
+Primary raw alpha,0.781
+Primary standardized alpha,0.800
+Primary ordinal alpha,0.903
+Four-item CFA admissible,No
+Primary composite mean,4.800
+Primary composite SD,0.437
+Primary maximum-score percentage,71.2%
+Sensitivity variable,feedback_experience_3item
+Sensitivity number of items,3
+Sensitivity raw alpha,0.631
+Sensitivity observed omega,0.655
+Correlation between primary and sensitivity scores,0.981

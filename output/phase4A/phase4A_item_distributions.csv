@@ -1,0 +1,21 @@
+item,response,n,percent
+feedback_helped_improve,Strongly disagree,0,0
+feedback_helped_improve,Somewhat disagree,3,0.01764705882352941
+feedback_helped_improve,Neither agree nor disagree,2,0.011764705882352941
+feedback_helped_improve,Somewhat agree,17,0.1
+feedback_helped_improve,Strongly agree,148,0.8705882352941177
+feedback_specific_relevant,Strongly disagree,0,0
+feedback_specific_relevant,Somewhat disagree,3,0.01764705882352941
+feedback_specific_relevant,Neither agree nor disagree,3,0.01764705882352941
+feedback_specific_relevant,Somewhat agree,14,0.08235294117647059
+feedback_specific_relevant,Strongly agree,150,0.8823529411764706
+feedback_timely,Strongly disagree,2,0.011764705882352941
+feedback_timely,Somewhat disagree,4,0.023529411764705882
+feedback_timely,Neither agree nor disagree,1,0.0058823529411764705
+feedback_timely,Somewhat agree,25,0.14705882352941177
+feedback_timely,Strongly agree,138,0.8117647058823529
+rubric_clear_aligned,Strongly disagree,0,0
+rubric_clear_aligned,Somewhat disagree,0,0
+rubric_clear_aligned,Neither agree nor disagree,5,0.029411764705882353
+rubric_clear_aligned,Somewhat agree,20,0.11764705882352941
+rubric_clear_aligned,Strongly agree,145,0.8529411764705882

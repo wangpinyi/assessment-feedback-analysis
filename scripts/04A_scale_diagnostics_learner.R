@@ -208,3 +208,222 @@ polychoric_heatmap_uf <- ggplot(
   )
 
 print(polychoric_heatmap_uf)
+
+
+### Reliability analysis
+four_item_alpha_object <- psych::alpha(
+  as.data.frame(feedback_numeric),
+  check.keys = FALSE,
+  warnings = FALSE
+)
+
+### inspect the overall results
+four_item_alpha_object <- psych::alpha(
+  as.data.frame(feedback_numeric),
+  check.keys = FALSE,
+  warnings = FALSE
+)
+
+
+### Inspect the item-level results
+four_item_alpha_object$item.stats
+four_item_alpha_object$alpha.drop
+
+
+### Build a clean diagnostic table
+reliability_diagnostics <- tibble(
+  item = feedback_items,
+  item_label = unname(feedback_item_labels[feedback_items]),
+  
+  corrected_item_total_correlation =
+    four_item_alpha_object$item.stats$r.drop,
+  
+  alpha_if_item_deleted =
+    four_item_alpha_object$alpha.drop$raw_alpha
+) |>
+  mutate(
+    overall_alpha =
+      four_item_alpha_object$total$raw_alpha
+  )
+
+print(
+  reliability_diagnostics,
+  n = Inf,
+  width = Inf
+)
+
+
+### Save
+readr::write_csv(
+  reliability_diagnostics,
+  file.path(
+    scale_diagnostics_dir,
+    "learner_feedback_reliability_diagnostics.csv"
+  ),
+  na = ""
+)
+
+
+
+#-------------------------------
+### Reshape for plotting
+#-------------------------------
+reliability_plot_data <- reliability_diagnostics |>
+  select(
+    item_label,
+    corrected_item_total_correlation,
+    alpha_if_item_deleted,
+    overall_alpha
+  ) |>
+  pivot_longer(
+    cols = c(
+      corrected_item_total_correlation,
+      alpha_if_item_deleted
+    ),
+    names_to = "metric",
+    values_to = "value"
+  ) |>
+  mutate(
+    metric = recode(
+      metric,
+      corrected_item_total_correlation =
+        "Corrected item–total correlation",
+      alpha_if_item_deleted =
+        "Alpha if item deleted"
+    ),
+    
+    item_label = factor(
+      item_label,
+      levels = rev(c(
+        "Rubric clarity",
+        "Specificity and relevance",
+        "Improvement guidance",
+        "Timeliness"
+      ))
+    )
+  )
+
+print(
+  reliability_plot_data,
+  n = Inf,
+  width = Inf
+)
+
+### Creat the UF themed plot
+uf_blue <- "#0021A5"
+uf_orange <- "#FA4616"
+
+overall_alpha_value <- four_item_alpha_object$total$raw_alpha
+
+reliability_plot <- ggplot(
+  reliability_plot_data,
+  aes(
+    x = value,
+    y = item_label,
+    color = metric
+  )
+) +
+  geom_segment(
+    aes(
+      x = 0,
+      xend = value,
+      y = item_label,
+      yend = item_label
+    ),
+    linewidth = 1
+  ) +
+  geom_point(
+    size = 4
+  ) +
+  facet_wrap(
+    ~ metric,
+    ncol = 1,
+    scales = "free_x"
+  ) +
+  geom_vline(
+    data = tibble(
+      metric = c(
+        "Corrected item–total correlation",
+        "Alpha if item deleted"
+      ),
+      reference_value = c(
+        0.30,
+        overall_alpha_value
+      )
+    ),
+    aes(xintercept = reference_value),
+    inherit.aes = FALSE,
+    linetype = "dashed",
+    linewidth = 0.8,
+    color = "gray40"
+  ) +
+  geom_text(
+    aes(
+      label = sprintf("%.2f", value)
+    ),
+    hjust = -0.15,
+    size = 4,
+    color = "black"
+  ) +
+  scale_color_manual(
+    values = c(
+      "Corrected item–total correlation" = uf_blue,
+      "Alpha if item deleted" = uf_orange
+    ),
+    guide = "none"
+  ) +
+  scale_x_continuous(
+    expand = expansion(mult = c(0, 0.15))
+  ) +
+  labs(
+    title = "Reliability Diagnostics for the Feedback-Experience Items",
+    subtitle = paste0(
+      "Overall Cronbach’s alpha = ",
+      sprintf("%.2f", overall_alpha_value),
+      "; dashed lines show the reference threshold (r = .30) and the overall alpha"
+    ),
+    x = NULL,
+    y = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    strip.text = element_text(
+      face = "bold",
+      size = 12
+    ),
+    plot.title = element_text(
+      face = "bold",
+      size = 16
+    ),
+    plot.subtitle = element_text(
+      size = 11
+    ),
+    plot.margin = margin(10, 20, 10, 10)
+  )
+
+print(reliability_plot)
+
+
+### Save the plot
+ggsave(
+  filename = file.path(
+    scale_diagnostics_dir,
+    "learner_feedback_reliability_plot.png"
+  ),
+  plot = reliability_plot,
+  width = 9,
+  height = 7,
+  dpi = 300
+)
+
+ggsave(
+  filename = file.path(
+    scale_diagnostics_dir,
+    "learner_feedback_reliability_plot.pdf"
+  ),
+  plot = reliability_plot,
+  width = 9,
+  height = 7
+)

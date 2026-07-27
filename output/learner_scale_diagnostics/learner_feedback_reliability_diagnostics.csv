@@ -1,0 +1,5 @@
+item,item_label,corrected_item_total_correlation,alpha_if_item_deleted,overall_alpha
+rubric_clear_aligned,Rubric clarity,0.508421367832939,0.7671693138704907,0.7808732188527584
+feedback_specific_relevant,Specificity and relevance,0.7745567103195503,0.6313708531537655,0.7808732188527584
+feedback_helped_improve,Improvement guidance,0.6907381601066649,0.6768930009290802,0.7808732188527584
+feedback_timely,Timeliness,0.45867548056169294,0.8266536131677172,0.7808732188527584

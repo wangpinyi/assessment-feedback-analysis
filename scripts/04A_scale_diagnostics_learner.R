@@ -209,7 +209,6 @@ polychoric_heatmap_uf <- ggplot(
 
 print(polychoric_heatmap_uf)
 
-
 ### Reliability analysis
 four_item_alpha_object <- psych::alpha(
   as.data.frame(feedback_numeric),

@@ -426,3 +426,191 @@ ggsave(
   width = 9,
   height = 7
 )
+
+
+# ==============================================================================
+# Calculate ordinal alpha and item diagnostics from the polychoric matrix
+# ==============================================================================
+
+feedback_items <- c(
+  "rubric_clear_aligned",
+  "feedback_specific_relevant",
+  "feedback_helped_improve",
+  "feedback_timely"
+)
+
+feedback_item_labels <- c(
+  rubric_clear_aligned = "Rubric clarity",
+  feedback_specific_relevant = "Specificity and relevance",
+  feedback_helped_improve = "Improvement guidance",
+  feedback_timely = "Timeliness"
+)
+
+# Confirm that matrix rows and columns match the item order
+polychoric_matrix <- polychoric_matrix[
+  feedback_items,
+  feedback_items
+]
+
+number_of_items <- ncol(polychoric_matrix)
+
+# ------------------------------------------------------------------------------
+# Overall ordinal alpha
+# ------------------------------------------------------------------------------
+
+average_polychoric_correlation <- mean(
+  polychoric_matrix[
+    lower.tri(polychoric_matrix)
+  ],
+  na.rm = TRUE
+)
+
+ordinal_alpha <- (
+  number_of_items *
+    average_polychoric_correlation
+) / (
+  1 +
+    (number_of_items - 1) *
+    average_polychoric_correlation
+)
+
+# ------------------------------------------------------------------------------
+# Ordinal item-rest correlations
+# ------------------------------------------------------------------------------
+
+ordinal_item_rest <- purrr::map_dbl(
+  seq_len(number_of_items),
+  function(item_number) {
+    
+    remaining_items <- setdiff(
+      seq_len(number_of_items),
+      item_number
+    )
+    
+    covariance_with_rest <- sum(
+      polychoric_matrix[
+        item_number,
+        remaining_items
+      ],
+      na.rm = TRUE
+    )
+    
+    variance_of_rest <- sum(
+      polychoric_matrix[
+        remaining_items,
+        remaining_items
+      ],
+      na.rm = TRUE
+    )
+    
+    covariance_with_rest /
+      sqrt(variance_of_rest)
+  }
+)
+
+names(ordinal_item_rest) <- feedback_items
+
+# ------------------------------------------------------------------------------
+# Ordinal alpha if each item is deleted
+# ------------------------------------------------------------------------------
+
+ordinal_alpha_if_deleted <- purrr::map_dbl(
+  seq_len(number_of_items),
+  function(item_number) {
+    
+    reduced_matrix <- polychoric_matrix[
+      -item_number,
+      -item_number,
+      drop = FALSE
+    ]
+    
+    reduced_item_count <- ncol(
+      reduced_matrix
+    )
+    
+    reduced_average_correlation <- mean(
+      reduced_matrix[
+        lower.tri(reduced_matrix)
+      ],
+      na.rm = TRUE
+    )
+    
+    (
+      reduced_item_count *
+        reduced_average_correlation
+    ) / (
+      1 +
+        (reduced_item_count - 1) *
+        reduced_average_correlation
+    )
+  }
+)
+
+names(ordinal_alpha_if_deleted) <-
+  feedback_items
+
+
+### verify the calculation
+cat(
+  "Average polychoric correlation:",
+  round(
+    average_polychoric_correlation,
+    3
+  ),
+  "\n"
+)
+
+cat(
+  "Overall ordinal alpha:",
+  round(
+    ordinal_alpha,
+    3
+  ),
+  "\n"
+)
+
+print(
+  round(
+    ordinal_item_rest,
+    3
+  )
+)
+
+print(
+  round(
+    ordinal_alpha_if_deleted,
+    3
+  )
+)
+
+
+### Diagnostic table
+ordinal_reliability_diagnostics <- tibble(
+  item = feedback_items,
+  
+  item_label = unname(
+    feedback_item_labels[
+      feedback_items
+    ]
+  ),
+  
+  ordinal_item_rest_correlation =
+    unname(
+      ordinal_item_rest[
+        feedback_items
+      ]
+    ),
+  
+  ordinal_alpha_if_deleted =
+    unname(
+      ordinal_alpha_if_deleted[
+        feedback_items
+      ]
+    )
+)
+
+print(
+  ordinal_reliability_diagnostics,
+  n = Inf,
+  width = Inf
+)

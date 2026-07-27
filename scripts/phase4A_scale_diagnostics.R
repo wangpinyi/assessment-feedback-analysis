@@ -162,6 +162,19 @@ if (anyNA(feedback_crosswalk$question_text)) {
 }
 
 print(feedback_crosswalk, n = Inf)
+
+### Define output_dir
+output_dir <- here(
+  "output",
+  "learner_scale_diagnostics"
+)
+
+dir.create(
+  output_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
 write_csv(
   feedback_crosswalk,
   file.path(output_dir, "phase4A_feedback_item_crosswalk.csv")

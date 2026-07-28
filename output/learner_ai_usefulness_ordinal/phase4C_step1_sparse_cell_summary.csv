@@ -1,0 +1,81 @@
+predictor,predictor_level,ai_usefulness,n,sparse_cell
+AI comfort,Strongly disagree,Strongly disagree,3,TRUE
+AI comfort,Strongly disagree,Somewhat disagree,3,TRUE
+AI comfort,Strongly disagree,Neither agree nor disagree,0,TRUE
+AI comfort,Strongly disagree,Somewhat agree,0,TRUE
+AI comfort,Strongly disagree,Strongly agree,0,TRUE
+AI comfort,Somewhat disagree,Strongly disagree,1,TRUE
+AI comfort,Somewhat disagree,Somewhat disagree,8,FALSE
+AI comfort,Somewhat disagree,Neither agree nor disagree,0,TRUE
+AI comfort,Somewhat disagree,Somewhat agree,1,TRUE
+AI comfort,Somewhat disagree,Strongly agree,0,TRUE
+AI comfort,Neither agree nor disagree,Strongly disagree,1,TRUE
+AI comfort,Neither agree nor disagree,Somewhat disagree,3,TRUE
+AI comfort,Neither agree nor disagree,Neither agree nor disagree,17,FALSE
+AI comfort,Neither agree nor disagree,Somewhat agree,6,FALSE
+AI comfort,Neither agree nor disagree,Strongly agree,3,TRUE
+AI comfort,Somewhat agree,Strongly disagree,0,TRUE
+AI comfort,Somewhat agree,Somewhat disagree,4,TRUE
+AI comfort,Somewhat agree,Neither agree nor disagree,6,FALSE
+AI comfort,Somewhat agree,Somewhat agree,34,FALSE
+AI comfort,Somewhat agree,Strongly agree,5,FALSE
+AI comfort,Strongly agree,Strongly disagree,2,TRUE
+AI comfort,Strongly agree,Somewhat disagree,2,TRUE
+AI comfort,Strongly agree,Neither agree nor disagree,3,TRUE
+AI comfort,Strongly agree,Somewhat agree,14,FALSE
+AI comfort,Strongly agree,Strongly agree,54,FALSE
+Prior AI experience,No experience,Strongly disagree,3,TRUE
+Prior AI experience,No experience,Somewhat disagree,9,FALSE
+Prior AI experience,No experience,Neither agree nor disagree,7,FALSE
+Prior AI experience,No experience,Somewhat agree,12,FALSE
+Prior AI experience,No experience,Strongly agree,13,FALSE
+Prior AI experience,Minimal experience,Strongly disagree,3,TRUE
+Prior AI experience,Minimal experience,Somewhat disagree,6,FALSE
+Prior AI experience,Minimal experience,Neither agree nor disagree,13,FALSE
+Prior AI experience,Minimal experience,Somewhat agree,17,FALSE
+Prior AI experience,Minimal experience,Strongly agree,14,FALSE
+Prior AI experience,Some experience,Strongly disagree,1,TRUE
+Prior AI experience,Some experience,Somewhat disagree,5,FALSE
+Prior AI experience,Some experience,Neither agree nor disagree,6,FALSE
+Prior AI experience,Some experience,Somewhat agree,25,FALSE
+Prior AI experience,Some experience,Strongly agree,21,FALSE
+Prior AI experience,Extensive experience,Strongly disagree,0,TRUE
+Prior AI experience,Extensive experience,Somewhat disagree,0,TRUE
+Prior AI experience,Extensive experience,Neither agree nor disagree,0,TRUE
+Prior AI experience,Extensive experience,Somewhat agree,1,TRUE
+Prior AI experience,Extensive experience,Strongly agree,14,FALSE
+AI awareness,Not aware at all,Strongly disagree,2,TRUE
+AI awareness,Not aware at all,Somewhat disagree,7,FALSE
+AI awareness,Not aware at all,Neither agree nor disagree,8,FALSE
+AI awareness,Not aware at all,Somewhat agree,7,FALSE
+AI awareness,Not aware at all,Strongly agree,4,TRUE
+AI awareness,Somewhat aware,Strongly disagree,1,TRUE
+AI awareness,Somewhat aware,Somewhat disagree,1,TRUE
+AI awareness,Somewhat aware,Neither agree nor disagree,6,FALSE
+AI awareness,Somewhat aware,Somewhat agree,17,FALSE
+AI awareness,Somewhat aware,Strongly agree,8,FALSE
+AI awareness,"Yes, fully aware",Strongly disagree,4,TRUE
+AI awareness,"Yes, fully aware",Somewhat disagree,12,FALSE
+AI awareness,"Yes, fully aware",Neither agree nor disagree,12,FALSE
+AI awareness,"Yes, fully aware",Somewhat agree,31,FALSE
+AI awareness,"Yes, fully aware",Strongly agree,50,FALSE
+Teaching experience,0-3 years,Strongly disagree,1,TRUE
+Teaching experience,0-3 years,Somewhat disagree,5,FALSE
+Teaching experience,0-3 years,Neither agree nor disagree,6,FALSE
+Teaching experience,0-3 years,Somewhat agree,11,FALSE
+Teaching experience,0-3 years,Strongly agree,16,FALSE
+Teaching experience,4-10 years,Strongly disagree,3,TRUE
+Teaching experience,4-10 years,Somewhat disagree,5,FALSE
+Teaching experience,4-10 years,Neither agree nor disagree,8,FALSE
+Teaching experience,4-10 years,Somewhat agree,16,FALSE
+Teaching experience,4-10 years,Strongly agree,18,FALSE
+Teaching experience,11-20 years,Strongly disagree,1,TRUE
+Teaching experience,11-20 years,Somewhat disagree,5,FALSE
+Teaching experience,11-20 years,Neither agree nor disagree,5,FALSE
+Teaching experience,11-20 years,Somewhat agree,13,FALSE
+Teaching experience,11-20 years,Strongly agree,14,FALSE
+Teaching experience,20+ years,Strongly disagree,2,TRUE
+Teaching experience,20+ years,Somewhat disagree,5,FALSE
+Teaching experience,20+ years,Neither agree nor disagree,7,FALSE
+Teaching experience,20+ years,Somewhat agree,15,FALSE
+Teaching experience,20+ years,Strongly agree,14,FALSE

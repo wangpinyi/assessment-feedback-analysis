@@ -1,0 +1,3 @@
+comparison,smaller_model_n,larger_model_n,smaller_model_log_likelihood,larger_model_log_likelihood,likelihood_ratio_chisquare,df,p_value
+Usefulness only versus usefulness plus feedback,169,169,-203.45186517016484,-197.77852387602155,11.34668258828657,3,0.009991611092438922
+Feedback only versus feedback plus usefulness,169,169,-216.38880844943435,-197.77852387602155,37.220569146825596,3,4.132551155043502e-8

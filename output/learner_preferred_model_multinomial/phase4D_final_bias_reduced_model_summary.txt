@@ -1,0 +1,23 @@
+Call:
+brglm2::brmultinom(formula = preferred_model ~ ai_usefulness_score + 
+    feedback_experience_half_point, data = analysis_complete, 
+    ref = 1, type = "AS_mean")
+
+Coefficients:
+                                            (Intercept) ai_usefulness_score feedback_experience_half_point
+AI initial feedback; universal human review   -2.439493           0.7261553                     -0.2844337
+AI-led feedback; disputed-only human review   -5.899595           1.5536104                      0.7306792
+No preference                                 -1.289307           0.1933688                      0.5602254
+
+Std. Errors:
+                                            (Intercept) ai_usefulness_score feedback_experience_half_point
+AI initial feedback; universal human review   0.6453158           0.2072594                      0.2083303
+AI-led feedback; disputed-only human review   1.3537010           0.3796380                      0.5840935
+No preference                                 0.5380657           0.1915782                      0.4081414
+
+Residual Deviance: 395.9226 
+Log-likelihood: -197.9613 
+AIC: 413.9226
+
+Type of estimator: AS_mean (mean bias-reducing adjusted score equations)
+Number of Fisher Scoring iterations: 30

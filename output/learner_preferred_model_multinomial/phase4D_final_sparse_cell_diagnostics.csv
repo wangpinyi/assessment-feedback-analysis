@@ -1,0 +1,85 @@
+predictor,predictor_level,preferred_model,n,row_percent,sparse_cell,zero_cell
+Prior AI experience,No experience,Human-led grading; AI support,17,38.63636363636363,FALSE,FALSE
+Prior AI experience,No experience,AI initial feedback; universal human review,10,22.727272727272727,FALSE,FALSE
+Prior AI experience,No experience,AI-led feedback; disputed-only human review,7,15.909090909090908,FALSE,FALSE
+Prior AI experience,No experience,No preference,10,22.727272727272727,FALSE,FALSE
+Prior AI experience,Minimal experience,Human-led grading; AI support,24,45.283018867924525,FALSE,FALSE
+Prior AI experience,Minimal experience,AI initial feedback; universal human review,16,30.18867924528302,FALSE,FALSE
+Prior AI experience,Minimal experience,AI-led feedback; disputed-only human review,5,9.433962264150944,FALSE,FALSE
+Prior AI experience,Minimal experience,No preference,8,15.09433962264151,FALSE,FALSE
+Prior AI experience,Some experience,Human-led grading; AI support,21,36.8421052631579,FALSE,FALSE
+Prior AI experience,Some experience,AI initial feedback; universal human review,18,31.57894736842105,FALSE,FALSE
+Prior AI experience,Some experience,AI-led feedback; disputed-only human review,9,15.789473684210526,FALSE,FALSE
+Prior AI experience,Some experience,No preference,9,15.789473684210526,FALSE,FALSE
+Prior AI experience,Extensive experience,Human-led grading; AI support,4,26.666666666666668,TRUE,FALSE
+Prior AI experience,Extensive experience,AI initial feedback; universal human review,1,6.666666666666667,TRUE,FALSE
+Prior AI experience,Extensive experience,AI-led feedback; disputed-only human review,7,46.666666666666664,FALSE,FALSE
+Prior AI experience,Extensive experience,No preference,3,20,TRUE,FALSE
+AI awareness,Not aware at all,Human-led grading; AI support,14,51.851851851851855,FALSE,FALSE
+AI awareness,Not aware at all,AI initial feedback; universal human review,4,14.814814814814815,TRUE,FALSE
+AI awareness,Not aware at all,AI-led feedback; disputed-only human review,3,11.11111111111111,TRUE,FALSE
+AI awareness,Not aware at all,No preference,6,22.22222222222222,FALSE,FALSE
+AI awareness,Somewhat aware,Human-led grading; AI support,8,24.242424242424242,FALSE,FALSE
+AI awareness,Somewhat aware,AI initial feedback; universal human review,14,42.42424242424242,FALSE,FALSE
+AI awareness,Somewhat aware,AI-led feedback; disputed-only human review,6,18.181818181818183,FALSE,FALSE
+AI awareness,Somewhat aware,No preference,5,15.151515151515152,FALSE,FALSE
+AI awareness,"Yes, fully aware",Human-led grading; AI support,44,40.36697247706422,FALSE,FALSE
+AI awareness,"Yes, fully aware",AI initial feedback; universal human review,27,24.770642201834864,FALSE,FALSE
+AI awareness,"Yes, fully aware",AI-led feedback; disputed-only human review,19,17.431192660550458,FALSE,FALSE
+AI awareness,"Yes, fully aware",No preference,19,17.431192660550458,FALSE,FALSE
+AI comfort,Strongly disagree,Human-led grading; AI support,3,50,TRUE,FALSE
+AI comfort,Strongly disagree,AI initial feedback; universal human review,0,0,TRUE,TRUE
+AI comfort,Strongly disagree,AI-led feedback; disputed-only human review,0,0,TRUE,TRUE
+AI comfort,Strongly disagree,No preference,3,50,TRUE,FALSE
+AI comfort,Somewhat disagree,Human-led grading; AI support,10,100,FALSE,FALSE
+AI comfort,Somewhat disagree,AI initial feedback; universal human review,0,0,TRUE,TRUE
+AI comfort,Somewhat disagree,AI-led feedback; disputed-only human review,0,0,TRUE,TRUE
+AI comfort,Somewhat disagree,No preference,0,0,TRUE,TRUE
+AI comfort,Neither agree nor disagree,Human-led grading; AI support,13,43.333333333333336,FALSE,FALSE
+AI comfort,Neither agree nor disagree,AI initial feedback; universal human review,8,26.666666666666668,FALSE,FALSE
+AI comfort,Neither agree nor disagree,AI-led feedback; disputed-only human review,1,3.3333333333333335,TRUE,FALSE
+AI comfort,Neither agree nor disagree,No preference,8,26.666666666666668,FALSE,FALSE
+AI comfort,Somewhat agree,Human-led grading; AI support,21,42.857142857142854,FALSE,FALSE
+AI comfort,Somewhat agree,AI initial feedback; universal human review,20,40.816326530612244,FALSE,FALSE
+AI comfort,Somewhat agree,AI-led feedback; disputed-only human review,4,8.16326530612245,TRUE,FALSE
+AI comfort,Somewhat agree,No preference,4,8.16326530612245,TRUE,FALSE
+AI comfort,Strongly agree,Human-led grading; AI support,19,25.675675675675677,FALSE,FALSE
+AI comfort,Strongly agree,AI initial feedback; universal human review,17,22.972972972972972,FALSE,FALSE
+AI comfort,Strongly agree,AI-led feedback; disputed-only human review,23,31.08108108108108,FALSE,FALSE
+AI comfort,Strongly agree,No preference,15,20.27027027027027,FALSE,FALSE
+Perceived AI usefulness,Strongly disagree,Human-led grading; AI support,4,57.142857142857146,TRUE,FALSE
+Perceived AI usefulness,Strongly disagree,AI initial feedback; universal human review,0,0,TRUE,TRUE
+Perceived AI usefulness,Strongly disagree,AI-led feedback; disputed-only human review,0,0,TRUE,TRUE
+Perceived AI usefulness,Strongly disagree,No preference,3,42.857142857142854,TRUE,FALSE
+Perceived AI usefulness,Somewhat disagree,Human-led grading; AI support,16,80,FALSE,FALSE
+Perceived AI usefulness,Somewhat disagree,AI initial feedback; universal human review,3,15,TRUE,FALSE
+Perceived AI usefulness,Somewhat disagree,AI-led feedback; disputed-only human review,0,0,TRUE,TRUE
+Perceived AI usefulness,Somewhat disagree,No preference,1,5,TRUE,FALSE
+Perceived AI usefulness,Neither agree nor disagree,Human-led grading; AI support,11,42.30769230769231,FALSE,FALSE
+Perceived AI usefulness,Neither agree nor disagree,AI initial feedback; universal human review,4,15.384615384615385,TRUE,FALSE
+Perceived AI usefulness,Neither agree nor disagree,AI-led feedback; disputed-only human review,2,7.6923076923076925,TRUE,FALSE
+Perceived AI usefulness,Neither agree nor disagree,No preference,9,34.61538461538461,FALSE,FALSE
+Perceived AI usefulness,Somewhat agree,Human-led grading; AI support,24,43.63636363636363,FALSE,FALSE
+Perceived AI usefulness,Somewhat agree,AI initial feedback; universal human review,21,38.18181818181818,FALSE,FALSE
+Perceived AI usefulness,Somewhat agree,AI-led feedback; disputed-only human review,4,7.2727272727272725,TRUE,FALSE
+Perceived AI usefulness,Somewhat agree,No preference,6,10.909090909090908,FALSE,FALSE
+Perceived AI usefulness,Strongly agree,Human-led grading; AI support,11,18.0327868852459,FALSE,FALSE
+Perceived AI usefulness,Strongly agree,AI initial feedback; universal human review,17,27.868852459016395,FALSE,FALSE
+Perceived AI usefulness,Strongly agree,AI-led feedback; disputed-only human review,22,36.0655737704918,FALSE,FALSE
+Perceived AI usefulness,Strongly agree,No preference,11,18.0327868852459,FALSE,FALSE
+Teaching experience,0-3 years,Human-led grading; AI support,16,41.02564102564103,FALSE,FALSE
+Teaching experience,0-3 years,AI initial feedback; universal human review,8,20.512820512820515,FALSE,FALSE
+Teaching experience,0-3 years,AI-led feedback; disputed-only human review,9,23.076923076923077,FALSE,FALSE
+Teaching experience,0-3 years,No preference,6,15.384615384615385,FALSE,FALSE
+Teaching experience,4-10 years,Human-led grading; AI support,22,44,FALSE,FALSE
+Teaching experience,4-10 years,AI initial feedback; universal human review,11,22,FALSE,FALSE
+Teaching experience,4-10 years,AI-led feedback; disputed-only human review,5,10,FALSE,FALSE
+Teaching experience,4-10 years,No preference,12,24,FALSE,FALSE
+Teaching experience,11-20 years,Human-led grading; AI support,14,37.83783783783784,FALSE,FALSE
+Teaching experience,11-20 years,AI initial feedback; universal human review,11,29.72972972972973,FALSE,FALSE
+Teaching experience,11-20 years,AI-led feedback; disputed-only human review,6,16.216216216216218,FALSE,FALSE
+Teaching experience,11-20 years,No preference,6,16.216216216216218,FALSE,FALSE
+Teaching experience,20+ years,Human-led grading; AI support,14,32.55813953488372,FALSE,FALSE
+Teaching experience,20+ years,AI initial feedback; universal human review,15,34.883720930232556,FALSE,FALSE
+Teaching experience,20+ years,AI-led feedback; disputed-only human review,8,18.6046511627907,FALSE,FALSE
+Teaching experience,20+ years,No preference,6,13.953488372093023,FALSE,FALSE

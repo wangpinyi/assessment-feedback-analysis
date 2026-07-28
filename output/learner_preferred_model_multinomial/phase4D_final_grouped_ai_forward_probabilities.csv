@@ -1,0 +1,16 @@
+ai_usefulness_score,ai_usefulness,observed_n,preference_group,predicted_probability,predicted_percent
+0,Strongly disagree,7,Human-led grading,0.7485400981749895,74.9%
+0,Strongly disagree,7,AI-forward feedback model,0.059667885002268134,6.0%
+0,Strongly disagree,7,No preference,0.19179201682274244,19.2%
+1,Somewhat disagree,20,Human-led grading,0.6715139072738122,67.2%
+1,Somewhat disagree,20,AI-forward feedback model,0.1182062489540122,11.8%
+1,Somewhat disagree,20,No preference,0.2102798437721756,21.0%
+2,Neither agree nor disagree,26,Human-led grading,0.5594147854677858,55.9%
+2,Neither agree nor disagree,26,AI-forward feedback model,0.22649158104971884,22.6%
+2,Neither agree nor disagree,26,No preference,0.21409363348249538,21.4%
+3,Somewhat agree,55,Human-led grading,0.40321232959099546,40.3%
+3,Somewhat agree,55,AI-forward feedback model,0.4081924015395949,40.8%
+3,Somewhat agree,55,No preference,0.18859526886940975,18.9%
+4,Strongly agree,61,Human-led grading,0.22249827699085153,22.2%
+4,Strongly agree,61,AI-forward feedback model,0.6503123518233143,65.0%
+4,Strongly agree,61,No preference,0.12718937118583432,12.7%

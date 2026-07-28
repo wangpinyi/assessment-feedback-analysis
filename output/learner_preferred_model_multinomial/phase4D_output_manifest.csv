@@ -1,0 +1,25 @@
+file,description
+final_phase4D_multinomial_model.rds,Final maximum-likelihood multinomial model
+final_phase4D_bias_reduced_model.rds,Final mean-bias-reduced sensitivity model
+learner_analysis_phase4D_complete_cases.rds,Complete-case Phase 4D analysis dataset
+phase4D_final_analysis_checkpoint.rds,Complete Phase 4D analysis checkpoint
+phase4D_final_model_summary.txt,Printed summary of the final multinomial model
+phase4D_final_bias_reduced_model_summary.txt,Printed summary of the bias-reduced model
+phase4D_session_info.txt,R and package version information
+phase4D_final_preferred_model_distribution.csv,Observed preferred-model distribution
+phase4D_final_human_review_summary.csv,Summary of human-review preferences
+phase4D_final_sparse_cell_diagnostics.csv,Predictor-by-outcome sparse-cell diagnostics
+phase4D_final_model_fit_summary.csv,Fit statistics for candidate models
+phase4D_final_primary_omnibus_tests.csv,Term-level likelihood-ratio tests
+phase4D_final_reduced_model_comparisons.csv,Likelihood-ratio comparisons for reduced models
+phase4D_final_reduced_model_fit.csv,Fit statistics for reduced models
+phase4D_final_model_selection.csv,Final model-selection summary
+phase4D_final_coefficient_table.csv,Complete final coefficient table
+phase4D_final_report_ready_coefficients.csv,Report-ready coefficient and relative-risk-ratio table
+phase4D_final_bias_reduced_diagnostics.csv,Bias-reduced model numerical diagnostics
+phase4D_final_ml_vs_bias_reduced_comparison.csv,Comparison of maximum-likelihood and bias-reduced estimates
+phase4D_final_adjusted_probabilities_long.csv,Long-format adjusted probability table
+phase4D_final_adjusted_probabilities_wide.csv,Wide-format adjusted probability table
+phase4D_final_grouped_ai_forward_probabilities.csv,Grouped AI-forward probability summary
+phase4D_adjusted_preferred_model_probabilities.png,Report-ready PNG figure
+phase4D_adjusted_preferred_model_probabilities.pdf,Vector-format PDF figure

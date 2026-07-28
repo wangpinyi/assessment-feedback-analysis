@@ -1,0 +1,16 @@
+file,description
+final_phase4C_ai_usefulness_model.rds,Final fitted cumulative-link location-scale model
+phase4C_final_analysis_checkpoint.rds,Complete Phase 4C model and output checkpoint
+phase4C_final_model_summary.txt,Printed summary of the final model
+phase4C_session_info.txt,R and package version information
+phase4C_final_predicted_probabilities_by_ai_comfort.csv,Adjusted agreement probabilities across AI-comfort levels
+phase4C_final_model_fit_comparison.csv,Fit comparison among proportional-odds and location-scale models
+phase4C_comparison_proportional_vs_location_scale.csv,Likelihood-ratio comparison of proportional-odds and scale models
+phase4C_comparison_feedback_added_to_final_model.csv,Likelihood-ratio test of adding feedback experience
+phase4C_final_model_coefficient_matrix.csv,Coefficient matrix from the final model summary
+phase4C_final_outcome_distribution.csv,Distribution of the perceived-usefulness outcome
+phase4C_final_sparse_cell_diagnostics.csv,Predictor-by-outcome sparse-cell diagnostics
+phase4C_final_nominal_effects_diagnostic.csv,Nominal-effects diagnostic output
+phase4C_final_scale_effects_diagnostic.csv,Scale-effects diagnostic output
+phase4C_adjusted_usefulness_probability.png,Report-ready PNG figure
+phase4C_adjusted_usefulness_probability.pdf,Vector-format PDF figure

@@ -1,0 +1,2 @@
+selected_model,formula,analytic_n,number_of_parameters,log_likelihood,AIC,BIC,feedback_addition_likelihood_ratio,feedback_addition_df,feedback_addition_p_value
+Usefulness-and-feedback multinomial model,preferred_model ~ ai_usefulness_score + feedback_experience_half_point,169,9,-197.77852387602155,413.5570477520431,441.72613618635074,11.34668258828657,3,0.009991611092438922

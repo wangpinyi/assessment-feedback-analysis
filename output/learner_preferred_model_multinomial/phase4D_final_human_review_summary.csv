@@ -1,0 +1,10 @@
+metric,n,denominator,percent
+Valid preferred-model responses,169,169,100
+Expressed a directional model preference,139,169,82.24852071005917
+No preference,30,169,17.75147928994083
+Preferred universal human review,111,169,65.68047337278107
+Preferred disputed-only human review,28,169,16.568047337278106
+Preferred human-led grading with AI support,66,169,39.053254437869825
+Preferred AI initial feedback with universal human review,45,169,26.62721893491124
+Universal review among directional preferences,111,139,79.85611510791367
+Human-led grading among universal-review preferences,66,111,59.45945945945946

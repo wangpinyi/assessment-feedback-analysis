@@ -1,0 +1,19 @@
+Call:
+nnet::multinom(formula = preferred_model ~ ai_usefulness_score + 
+    feedback_experience_half_point, data = analysis_complete, 
+    Hess = TRUE, model = TRUE, trace = FALSE, maxit = 1000, MaxNWts = 10000)
+
+Coefficients:
+                                            (Intercept) ai_usefulness_score feedback_experience_half_point
+AI initial feedback; universal human review   -2.551929           0.7609323                     -0.3115082
+AI-led feedback; disputed-only human review   -6.330475           1.6457979                      0.9609175
+No preference                                 -1.361713           0.2006177                      0.6758584
+
+Std. Errors:
+                                            (Intercept) ai_usefulness_score feedback_experience_half_point
+AI initial feedback; universal human review   0.6550968           0.2098664                      0.2098335
+AI-led feedback; disputed-only human review   1.4437289           0.4011444                      0.6850143
+No preference                                 0.5445829           0.1938204                      0.4453003
+
+Residual Deviance: 395.557 
+AIC: 413.557 

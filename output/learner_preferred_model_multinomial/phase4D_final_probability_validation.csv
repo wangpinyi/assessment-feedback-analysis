@@ -1,0 +1,6 @@
+ai_usefulness_score,ai_usefulness,number_of_outcomes,probability_sum,minimum_probability,maximum_probability
+0,Strongly disagree,4,1,0.0013332898373510516,0.7485400981749895
+1,Somewhat disagree,4,1,0.006201909907110613,0.6715139072738122
+2,Neither agree nor disagree,4,1,0.026789544224314607,0.5594147854677858
+3,Somewhat agree,4,1,0.10012121944173706,0.40321232959099546
+4,Strongly agree,4,1,0.12718937118583432,0.3638418415475313

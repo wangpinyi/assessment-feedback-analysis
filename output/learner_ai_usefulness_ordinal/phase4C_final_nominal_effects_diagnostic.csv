@@ -1,0 +1,6 @@
+test,term,Df,logLik,AIC,LRT,Pr(>Chi)
+Nominal-effects test,<none>,NA,-173.59975606596743,367.19951213193485,NA,NA
+Nominal-effects test,prior_ai_experience,NA,NA,NA,NA,NA
+Nominal-effects test,ai_awareness_score,NA,NA,NA,NA,NA
+Nominal-effects test,ai_comfort_score,NA,NA,NA,NA,NA
+Nominal-effects test,feedback_experience_half_point,NA,NA,NA,NA,NA

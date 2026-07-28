@@ -1,0 +1,6 @@
+ai_usefulness_score,ai_usefulness,observed_n,Human-led grading; AI support,AI initial feedback; universal human review,AI-led feedback; disputed-only human review,No preference
+0,Strongly disagree,7,74.9%,5.8%,0.1%,19.2%
+1,Somewhat disagree,20,67.2%,11.2%,0.6%,21.0%
+2,Neither agree nor disagree,26,55.9%,20.0%,2.7%,21.4%
+3,Somewhat agree,55,40.3%,30.8%,10.0%,18.9%
+4,Strongly agree,61,22.2%,36.4%,28.6%,12.7%

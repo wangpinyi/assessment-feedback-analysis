@@ -1,0 +1,3 @@
+comparison,model,no.par,AIC,logLik,LR.stat,df,Pr(>Chisq)
+Proportional odds versus AI-comfort location-scale,model_comfort_added,9,365.33677598408804,-173.66838799204402,NA,NA,NA
+Proportional odds versus AI-comfort location-scale,model_comfort_scale,10,359.2287039380805,-169.61435196904026,8.108072046007521,1,0.004406857217939699

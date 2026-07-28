@@ -1,0 +1,5 @@
+model,n,number_of_parameters,log_likelihood,AIC,BIC,convergence_code,convergence_message,maximum_absolute_gradient,hessian_condition_number,link
+Comfort-added proportional-odds model,170,9,-173.66838799204402,365.33677598408804,393.5589619175404,0,Absolute and relative convergence criteria were met,3.3862634918335743e-12,744.6665211094003,logit
+Comfort-added AI-comfort scale model,170,10,-169.61435196904026,359.2287039380805,390.5866883085831,0,Absolute and relative convergence criteria were met,3.213429522475053e-12,38408.2228436937,logit
+Full proportional-odds model,170,10,-173.59975606596743,367.19951213193485,398.55749650243746,0,Absolute and relative convergence criteria were met,3.1332852978849246e-12,745.7071264661045,logit
+Full AI-comfort scale model,170,11,-169.60894700196772,361.21789400393544,395.7116768114883,0,Absolute and relative convergence criteria were met,2.135802645852891e-11,40160.7175168322,logit

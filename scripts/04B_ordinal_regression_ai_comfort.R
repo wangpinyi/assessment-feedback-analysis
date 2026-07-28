@@ -850,47 +850,29 @@ print(summary(model_primary))
 # ------------------------------------------------------------------------------
 # 8. MODEL FIT AND NESTED MODEL COMPARISONS
 # ------------------------------------------------------------------------------
-
 extract_model_fit <- function(fitted_model, model_name) {
   
-  # Extract everything before constructing the tibble.
-  # This prevents tibble column names from masking the model object.
   model_log_likelihood <- logLik(fitted_model)
   diagnostics <- extract_clm_diagnostics(fitted_model)
-  model_n <- extract_clm_nobs(fitted_model)
-  
-  model_aic <- AIC(fitted_model)
-  model_bic <- BIC(fitted_model)
-  model_link <- fitted_model$link
   
   tibble(
     model = model_name,
-    
-    n = model_n,
-    
+    n = as.integer(fitted_model$nobs),
     number_of_parameters =
       attr(model_log_likelihood, "df"),
-    
     log_likelihood =
       as.numeric(model_log_likelihood),
-    
-    AIC = model_aic,
-    
-    BIC = model_bic,
-    
+    AIC = AIC(fitted_model),
+    BIC = BIC(fitted_model),
     convergence_code =
       diagnostics$convergence_code,
-    
     convergence_message =
       diagnostics$convergence_message,
-    
     maximum_absolute_gradient =
       diagnostics$maximum_gradient,
-    
     hessian_condition_number =
       diagnostics$hessian_condition,
-    
-    link = model_link
+    link = fitted_model$link
   )
 }
 
@@ -910,11 +892,31 @@ print(
 
 # The score-coded awareness model is nested within the factor-coded model:
 # the factor model permits a non-equally-spaced awareness association.
+# Null model versus AI-background model
+comparison_null_background <- anova(
+  model_null,
+  model_background
+)
+
+# AI-background model versus primary model
+comparison_background_primary <- anova(
+  model_background,
+  model_primary
+)
+
+# Primary model versus teaching-adjusted model
+comparison_primary_teaching <- anova(
+  model_primary,
+  model_teaching_adjusted
+)
+
+# Score-coded versus factor-coded awareness
 comparison_awareness_coding <- anova(
   model_primary,
   model_awareness_factor
 )
 
+# Omnibus tests for predictors in the primary model
 primary_omnibus_tests <- anova(
   model_primary,
   type = "II"
@@ -1187,6 +1189,12 @@ comparison_scale_coding <- anova(
 print(comparison_scale_coding)
 
 
+###-----------------------
+# Freeze the final model #
+###----------------------
+final_phase4B_model <- model_awareness_scale
+
+
 
 # ------------------------------------------------------------------------------
 # 11. ESTIMATED PROBABILITIES FOR REPORTING
@@ -1200,209 +1208,106 @@ agreement_cut <- paste(
   sep = "|"
 )
 
+
+
+### First calculate adjusted probabilities for each awareness level while:
+### holding back feedback experience as its sample mean, represent by 0 after centering
+### averaging over prior AI experience according to its observed sample distribution
+
+awareness_probability_final <- emmeans::emmeans(
+  final_phase4B_model,
+  specs = ~ ai_awareness_score,
+  mode = "exc.prob",
+  at = list(
+    cut = agreement_cut,
+    ai_awareness_score = 0:2,
+    feedback_experience_half_point = 0
+  ),
+  weights = "proportional"
+) |>
+  as.data.frame() |>
+  as_tibble() |>
+  transmute(
+    ai_awareness_score,
+    
+    ai_awareness = factor(
+      ai_awareness_score,
+      levels = 0:2,
+      labels = c(
+        "Not aware at all",
+        "Somewhat aware",
+        "Fully aware"
+      )
+    ),
+    
+    predicted_probability = exc.prob,
+    standard_error = SE,
+    confidence_low = asymp.LCL,
+    confidence_high = asymp.UCL
+  )
+
+### Inspect it
+print(
+  awareness_probability_final,
+  n = Inf,
+  width = Inf
+)
+
+
+### Define the helper
 standardize_probability_table <- function(emm_object) {
-
-  output <- as.data.frame(
-    emm_object
-  ) |>
+  
+  output <- emm_object |>
+    as.data.frame() |>
     as_tibble()
-
+  
   probability_column <- intersect(
     c("exc.prob", "prob"),
     names(output)
   )[1]
-
+  
   lower_column <- intersect(
     c("asymp.LCL", "lower.CL"),
     names(output)
   )[1]
-
+  
   upper_column <- intersect(
     c("asymp.UCL", "upper.CL"),
     names(output)
   )[1]
-
+  
   if (
-    is.na(probability_column) |
-      is.na(lower_column) |
-      is.na(upper_column)
+    is.na(probability_column) ||
+    is.na(lower_column) ||
+    is.na(upper_column)
   ) {
     stop(
-      "The emmeans probability output did not contain the expected ",
-      "probability and confidence-limit columns."
+      "Expected probability or confidence-interval columns ",
+      "were not found in the emmeans output."
     )
   }
-
-  names(output)[names(output) == probability_column] <-
-    "predicted_probability"
-
-  names(output)[names(output) == lower_column] <-
-    "confidence_low"
-
-  names(output)[names(output) == upper_column] <-
-    "confidence_high"
-
-  output
+  
+  output |>
+    rename(
+      predicted_probability =
+        all_of(probability_column),
+      
+      confidence_low =
+        all_of(lower_column),
+      
+      confidence_high =
+        all_of(upper_column)
+    )
 }
 
-# 11A. Probability distribution across all five response categories by prior
-#      AI experience, holding numeric predictors at their sample means.
-prior_full_probabilities <- emmeans::emmeans(
-  model_primary,
-  ~ ai_comfort | prior_ai_experience,
-  mode = "prob"
-) |>
-  as.data.frame() |>
-  as_tibble()
-
-# 11B. Probability of at least "Somewhat agree" by prior AI experience.
-prior_agreement_probability <- emmeans::emmeans(
-  model_primary,
-  ~ prior_ai_experience,
-  mode = "exc.prob",
-  at = list(
-    cut = agreement_cut
-  )
-) |>
-  standardize_probability_table() |>
-  mutate(
-    prior_ai_experience = factor(
-      prior_ai_experience,
-      levels = prior_ai_experience_levels
-    )
-  )
-
-# 11C. Probability of at least "Somewhat agree" across awareness levels.
-awareness_agreement_probability <- emmeans::emmeans(
-  model_primary,
-  ~ ai_awareness_score,
-  mode = "exc.prob",
-  at = list(
-    cut = agreement_cut,
-    ai_awareness_score = 0:2
-  )
-) |>
-  standardize_probability_table() |>
-  mutate(
-    ai_awareness = factor(
-      ai_awareness_score,
-      levels = 0:2,
-      labels = ai_awareness_levels
-    )
-  )
-
-# 11D. Probability of at least "Somewhat agree" across the observed high-density
-#      range of the four-item feedback composite.
-feedback_values_for_prediction <- seq(
-  from = 4.00,
-  to = 5.00,
-  by = 0.25
-)
-
-feedback_half_point_grid <- (
-  feedback_values_for_prediction -
-    feedback_experience_mean
-) / 0.5
-
-feedback_agreement_probability <- emmeans::emmeans(
-  model_primary,
-  ~ feedback_experience_half_point,
-  mode = "exc.prob",
-  at = list(
-    cut = agreement_cut,
-    feedback_experience_half_point =
-      feedback_half_point_grid
-  )
-) |>
-  standardize_probability_table() |>
-  mutate(
-    feedback_experience =
-      feedback_experience_mean +
-      0.5 * feedback_experience_half_point
-  )
-
-print(
-  prior_agreement_probability,
-  n = Inf,
-  width = Inf
-)
-
-print(
-  awareness_agreement_probability,
-  n = Inf,
-  width = Inf
-)
-
-print(
-  feedback_agreement_probability,
-  n = Inf,
-  width = Inf
-)
 
 
-# ------------------------------------------------------------------------------
-# 12. CREATE UF-THEMED REPORT-READY FIGURES
-# ------------------------------------------------------------------------------
-
+### Create the primary report figure
 uf_blue <- "#0021A5"
 uf_orange <- "#FA4616"
 
-prior_probability_plot <- ggplot(
-  prior_agreement_probability,
-  aes(
-    x = prior_ai_experience,
-    y = predicted_probability
-  )
-) +
-  geom_errorbar(
-    aes(
-      ymin = confidence_low,
-      ymax = confidence_high
-    ),
-    width = 0.12,
-    linewidth = 0.8,
-    color = uf_blue
-  ) +
-  geom_point(
-    size = 3.8,
-    color = uf_orange
-  ) +
-  scale_y_continuous(
-    limits = c(0, 1),
-    breaks = seq(0, 1, 0.2),
-    labels = scales::label_percent(
-      accuracy = 1
-    )
-  ) +
-  labs(
-    title = "Predicted Probability of Comfort With AI Feedback",
-    subtitle = paste0(
-      "Probability of selecting Somewhat agree or Strongly agree, ",
-      "by prior AI experience"
-    ),
-    x = "Prior AI experience",
-    y = "Predicted probability"
-  ) +
-  theme_minimal(
-    base_size = 12
-  ) +
-  theme(
-    panel.grid.minor = element_blank(),
-    axis.text.x = element_text(
-      angle = 20,
-      hjust = 1
-    ),
-    plot.title = element_text(
-      face = "bold",
-      size = 16
-    ),
-    plot.subtitle = element_text(
-      size = 11
-    )
-  )
-
-awareness_probability_plot <- ggplot(
-  awareness_agreement_probability,
+awareness_probability_plot_final <- ggplot(
+  awareness_probability_final,
   aes(
     x = ai_awareness,
     y = predicted_probability
@@ -1418,8 +1323,18 @@ awareness_probability_plot <- ggplot(
     color = uf_blue
   ) +
   geom_point(
-    size = 3.8,
+    size = 4,
     color = uf_orange
+  ) +
+  geom_text(
+    aes(
+      label = scales::percent(
+        predicted_probability,
+        accuracy = 1
+      )
+    ),
+    vjust = -1.2,
+    size = 4
   ) +
   scale_y_continuous(
     limits = c(0, 1),
@@ -1429,34 +1344,137 @@ awareness_probability_plot <- ggplot(
     )
   ) +
   labs(
-    title = "Predicted Probability of Comfort With AI Feedback",
+    title = "Adjusted Probability of Comfort With AI-Generated Feedback",
     subtitle = paste0(
-      "Probability of selecting Somewhat agree or Strongly agree, ",
-      "by awareness that AI was used"
+      "Probability of selecting Somewhat agree or Strongly agree; ",
+      "feedback experience held at its mean and prior AI experience ",
+      "averaged over the observed sample distribution"
     ),
-    x = "AI awareness",
+    x = "Awareness That AI Was Used",
     y = "Predicted probability"
   ) +
+  labs(
+    caption = paste0(
+      "Predictions are from the final cumulative-link location-scale model. ",
+      "Feedback experience is held at its sample mean of 4.80, and prior AI ",
+      "experience is averaged using its observed sample distribution. ",
+      "Error bars represent 95% confidence intervals."
+    )
+  )+
   theme_minimal(
     base_size = 12
   ) +
   theme(
     panel.grid.minor = element_blank(),
+    
     axis.text.x = element_text(
-      angle = 15,
-      hjust = 1
+      size = 11
     ),
+    
     plot.title = element_text(
       face = "bold",
       size = 16
     ),
+    
     plot.subtitle = element_text(
       size = 11
+    ),
+    
+    plot.margin = margin(
+      10,
+      15,
+      10,
+      10
     )
   )
 
-feedback_probability_plot <- ggplot(
-  feedback_agreement_probability,
+print(
+  awareness_probability_plot_final
+)
+
+
+### Examine feedback experience across awareness levels
+feedback_values_for_prediction <- seq(
+  from = 4.00,
+  to = 5.00,
+  by = 0.25
+)
+
+feedback_half_point_grid <- (
+  feedback_values_for_prediction -
+    feedback_experience_mean
+) / 0.5
+
+feedback_probability_final <- emmeans::emmeans(
+  final_phase4B_model,
+  specs =
+    ~ feedback_experience_half_point |
+    ai_awareness_score,
+  mode = "exc.prob",
+  at = list(
+    cut = agreement_cut,
+    ai_awareness_score = 0:2,
+    feedback_experience_half_point =
+      feedback_half_point_grid
+  ),
+  weights = "proportional"
+) |>
+  standardize_probability_table() |>
+  mutate(
+    ai_awareness = factor(
+      ai_awareness_score,
+      levels = 0:2,
+      labels = c(
+        "Not aware at all",
+        "Somewhat aware",
+        "Fully aware"
+      )
+    ),
+    
+    feedback_experience =
+      feedback_experience_mean +
+      0.5 * feedback_experience_half_point
+  )
+
+
+
+### Inspect the table
+print(
+  feedback_probability_final,
+  n = Inf,
+  width = Inf
+)
+
+stopifnot(
+  nrow(feedback_probability_final) == 15,
+  all(
+    feedback_probability_final$
+      predicted_probability >= 0
+  ),
+  all(
+    feedback_probability_final$
+      predicted_probability <= 1
+  ),
+  all(
+    feedback_probability_final$
+      confidence_low <=
+      feedback_probability_final$
+      predicted_probability
+  ),
+  all(
+    feedback_probability_final$
+      confidence_high >=
+      feedback_probability_final$
+      predicted_probability
+  )
+)
+
+
+
+
+### Facet the figure
+feedback_probability_plot_faceted <- ggplot(
+  feedback_probability_final,
   aes(
     x = feedback_experience,
     y = predicted_probability
@@ -1467,16 +1485,20 @@ feedback_probability_plot <- ggplot(
       ymin = confidence_low,
       ymax = confidence_high
     ),
-    alpha = 0.18,
-    fill = uf_orange
+    fill = uf_orange,
+    alpha = 0.15
   ) +
   geom_line(
-    linewidth = 1.1,
-    color = uf_blue
+    color = uf_blue,
+    linewidth = 1.15
   ) +
   geom_point(
-    size = 2.7,
-    color = uf_blue
+    color = uf_blue,
+    size = 2.8
+  ) +
+  facet_wrap(
+    ~ ai_awareness,
+    nrow = 1
   ) +
   scale_x_continuous(
     breaks = feedback_values_for_prediction
@@ -1489,340 +1511,882 @@ feedback_probability_plot <- ggplot(
     )
   ) +
   labs(
-    title = "Predicted Probability of Comfort With AI Feedback",
+    title = "Adjusted Probability of AI Comfort by Feedback Experience",
     subtitle = paste0(
-      "Probability of selecting Somewhat agree or Strongly agree, ",
-      "across the feedback-experience composite"
+      "Predicted probability of selecting Somewhat agree or Strongly agree, ",
+      "shown separately by awareness that AI was used"
     ),
-    x = "Feedback-experience composite",
+    x = "Feedback-Experience Composite",
     y = "Predicted probability"
+  ) +
+  labs(
+    caption = paste0(
+      "Predictions are from the final cumulative-link location-scale model; ",
+      "prior AI experience is averaged using its observed sample distribution. ",
+      "Shaded bands represent 95% confidence intervals. The displayed range of ",
+      "4.00–5.00 contains 165 of 170 respondents (97.1%); ",
+      "121 respondents (71.2%) scored 5.00."
+    )
+  )+
+  theme_minimal(
+    base_size = 12
+  ) +
+  theme(
+    panel.grid.minor = element_blank(),
+    
+    strip.text = element_text(
+      face = "bold",
+      size = 11
+    ),
+    
+    plot.title = element_text(
+      face = "bold",
+      size = 16
+    ),
+    
+    plot.subtitle = element_text(
+      size = 11
+    )
+  )
+
+print(
+  feedback_probability_plot_faceted
+)
+
+
+### Distribution figure
+feedback_distribution_plot <- analysis_complete |>
+  count(
+    feedback_experience,
+    name = "n"
+  ) |>
+  ggplot(
+    aes(
+      x = factor(feedback_experience),
+      y = n
+    )
+  ) +
+  geom_col(
+    fill = "#0021A5",
+    width = 0.75
+  ) +
+  geom_text(
+    aes(label = n),
+    vjust = -0.35,
+    size = 3.8
+  ) +
+  labs(
+    title = "Distribution of the Feedback-Experience Composite",
+    subtitle = "The composite exhibited a pronounced ceiling effect",
+    x = "Feedback-Experience Composite",
+    y = "Number of respondents"
   ) +
   theme_minimal(
     base_size = 12
   ) +
   theme(
     panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
     plot.title = element_text(
-      face = "bold",
-      size = 16
-    ),
-    plot.subtitle = element_text(
-      size = 11
+      face = "bold"
     )
   )
 
-print(prior_probability_plot)
-print(awareness_probability_plot)
-print(feedback_probability_plot)
+print(feedback_distribution_plot)
 
+
+# ==============================================================================
+# PHASE 4B FINAL EXPORT
+# Learner Assessment and Feedback Survey
+# ==============================================================================
+# Run this block after completing the Phase 4B analyses in the same R session.
+# It exports the preferred awareness-scale model, benchmark model, diagnostics,
+# predicted probabilities, final figures, model-ready data, and reproducibility
+# files.
+# ==============================================================================
+
+library(tidyverse)
+library(here)
+library(ordinal)
 
 # ------------------------------------------------------------------------------
-# 13. EXPORT TABLES, FIGURES, MODELS, AND SESSION INFORMATION
+# 1. CONFIRM REQUIRED OBJECTS
+# ------------------------------------------------------------------------------
+
+required_objects <- c(
+  "analysis_complete",
+  "model_primary",
+  "model_awareness_scale",
+  "model_awareness_scale_factor",
+  "final_phase4B_model",
+  "model_fit_summary",
+  "awareness_scale_fit",
+  "comparison_awareness_scale",
+  "comparison_scale_coding",
+  "nominal_test_table",
+  "scale_test_table",
+  "primary_odds_ratios",
+  "awareness_probability_final",
+  "feedback_probability_final",
+  "awareness_probability_plot_final",
+  "feedback_probability_plot_faceted"
+)
+
+missing_objects <- required_objects[
+  !vapply(
+    required_objects,
+    exists,
+    logical(1),
+    inherits = TRUE
+  )
+]
+
+if (length(missing_objects) > 0) {
+  stop(
+    paste0(
+      "The following required Phase 4B objects are missing:\n\n",
+      paste(missing_objects, collapse = "\n"),
+      "\n\nRerun the relevant analysis sections before exporting."
+    )
+  )
+}
+
+# ------------------------------------------------------------------------------
+# 2. CREATE FINAL OUTPUT DIRECTORY
+# ------------------------------------------------------------------------------
+
+phase4B_final_dir <- here(
+  "output",
+  "learner_ai_comfort_ordinal",
+  "final"
+)
+
+dir.create(
+  phase4B_final_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+if (!dir.exists(phase4B_final_dir)) {
+  stop("The final Phase 4B output directory could not be created.")
+}
+
+cat(
+  "Final Phase 4B files will be saved to:\n",
+  phase4B_final_dir,
+  "\n"
+)
+
+# ------------------------------------------------------------------------------
+# 3. FINAL MODEL COEFFICIENT TABLE
+# ------------------------------------------------------------------------------
+
+final_coefficient_matrix <- coef(
+  summary(final_phase4B_model)
+)
+
+final_model_coefficients <- as.data.frame(
+  final_coefficient_matrix
+) |>
+  rownames_to_column(
+    var = "parameter"
+  ) |>
+  as_tibble() |>
+  rename(
+    estimate = Estimate,
+    standard_error = `Std. Error`,
+    z_value = `z value`,
+    p_value = `Pr(>|z|)`
+  ) |>
+  mutate(
+    component = case_when(
+      parameter %in% names(final_phase4B_model$beta) ~
+        "Location effect",
+      
+      parameter %in% names(final_phase4B_model$zeta) ~
+        "Log-scale effect",
+      
+      parameter %in% names(final_phase4B_model$alpha) ~
+        "Threshold",
+      
+      TRUE ~
+        "Other"
+    ),
+    
+    confidence_low =
+      estimate - qnorm(0.975) * standard_error,
+    
+    confidence_high =
+      estimate + qnorm(0.975) * standard_error,
+    
+    significance = case_when(
+      p_value < .001 ~ "***",
+      p_value < .01 ~ "**",
+      p_value < .05 ~ "*",
+      p_value < .10 ~ ".",
+      TRUE ~ ""
+    )
+  ) |>
+  select(
+    component,
+    parameter,
+    estimate,
+    standard_error,
+    z_value,
+    p_value,
+    confidence_low,
+    confidence_high,
+    significance
+  )
+
+print(
+  final_model_coefficients,
+  n = Inf,
+  width = Inf
+)
+
+# ------------------------------------------------------------------------------
+# 4. FINAL SCALE-EFFECT INTERPRETATION TABLE
+# ------------------------------------------------------------------------------
+
+awareness_scale_estimate <- unname(
+  final_phase4B_model$zeta[
+    "ai_awareness_score"
+  ]
+)
+
+if (
+  length(awareness_scale_estimate) != 1 ||
+  !is.finite(awareness_scale_estimate)
+) {
+  stop(
+    "The AI-awareness scale coefficient could not be extracted ",
+    "from the final model."
+  )
+}
+
+awareness_scale_interpretation <- tibble(
+  contrast = c(
+    "One-category increase in AI awareness",
+    "Two-category increase: fully aware versus not aware"
+  ),
+  
+  log_scale_change = c(
+    awareness_scale_estimate,
+    2 * awareness_scale_estimate
+  ),
+  
+  latent_scale_multiplier = exp(
+    log_scale_change
+  ),
+  
+  percent_change_in_latent_scale =
+    100 * (
+      latent_scale_multiplier - 1
+    )
+)
+
+print(
+  awareness_scale_interpretation,
+  n = Inf,
+  width = Inf
+)
+
+# ------------------------------------------------------------------------------
+# 5. FINAL MODEL-SELECTION TABLE
+# ------------------------------------------------------------------------------
+
+extract_final_fit <- function(fitted_model, model_name) {
+  
+  model_log_likelihood <- logLik(
+    fitted_model
+  )
+  
+  tibble(
+    model = model_name,
+    n = as.integer(
+      fitted_model$nobs
+    ),
+    number_of_parameters =
+      attr(
+        model_log_likelihood,
+        "df"
+      ),
+    log_likelihood =
+      as.numeric(
+        model_log_likelihood
+      ),
+    AIC = AIC(
+      fitted_model
+    ),
+    BIC = BIC(
+      fitted_model
+    ),
+    maximum_absolute_gradient =
+      fitted_model$maxGradient,
+    hessian_condition_number =
+      fitted_model$cond.H,
+    link =
+      fitted_model$link
+  )
+}
+
+final_model_selection <- bind_rows(
+  extract_final_fit(
+    model_primary,
+    "Benchmark proportional-odds model"
+  ),
+  
+  extract_final_fit(
+    model_awareness_scale,
+    "Final linear awareness-scale model"
+  ),
+  
+  extract_final_fit(
+    model_awareness_scale_factor,
+    "Factor-coded awareness-scale sensitivity model"
+  )
+) |>
+  mutate(
+    delta_AIC =
+      AIC - min(AIC),
+    
+    delta_BIC =
+      BIC - min(BIC)
+  )
+
+print(
+  final_model_selection,
+  n = Inf,
+  width = Inf
+)
+
+# ------------------------------------------------------------------------------
+# 6. CONVERT MODEL-COMPARISON OBJECTS TO CLEAN TABLES
+# ------------------------------------------------------------------------------
+
+comparison_awareness_scale_table <- as.data.frame(
+  comparison_awareness_scale
+) |>
+  rownames_to_column(
+    var = "model"
+  ) |>
+  as_tibble()
+
+comparison_scale_coding_table <- as.data.frame(
+  comparison_scale_coding
+) |>
+  rownames_to_column(
+    var = "model"
+  ) |>
+  as_tibble()
+
+# ------------------------------------------------------------------------------
+# 7. FEEDBACK-COMPOSITE DISTRIBUTION AND CEILING SUMMARY
+# ------------------------------------------------------------------------------
+
+feedback_distribution <- analysis_complete |>
+  count(
+    feedback_experience,
+    name = "n"
+  ) |>
+  arrange(
+    feedback_experience
+  ) |>
+  mutate(
+    percent =
+      100 * n / sum(n)
+  )
+
+feedback_ceiling_summary <- analysis_complete |>
+  summarise(
+    total_n = n(),
+    
+    mean =
+      mean(
+        feedback_experience
+      ),
+    
+    standard_deviation =
+      sd(
+        feedback_experience
+      ),
+    
+    minimum =
+      min(
+        feedback_experience
+      ),
+    
+    percentile_05 =
+      as.numeric(
+        quantile(
+          feedback_experience,
+          .05
+        )
+      ),
+    
+    median =
+      median(
+        feedback_experience
+      ),
+    
+    percentile_95 =
+      as.numeric(
+        quantile(
+          feedback_experience,
+          .95
+        )
+      ),
+    
+    maximum =
+      max(
+        feedback_experience
+      ),
+    
+    maximum_score_n =
+      sum(
+        feedback_experience == 5
+      ),
+    
+    maximum_score_percent =
+      100 * mean(
+        feedback_experience == 5
+      ),
+    
+    displayed_range_n =
+      sum(
+        feedback_experience >= 4 &
+          feedback_experience <= 5
+      ),
+    
+    displayed_range_percent =
+      100 * mean(
+        feedback_experience >= 4 &
+          feedback_experience <= 5
+      )
+  )
+
+print(
+  feedback_ceiling_summary,
+  n = Inf,
+  width = Inf
+)
+
+# ------------------------------------------------------------------------------
+# 8. FINAL DECISION SUMMARY
+# ------------------------------------------------------------------------------
+
+phase4B_final_decision <- tibble(
+  feature = c(
+    "Final outcome",
+    "Final model",
+    "Location predictors",
+    "Scale predictor",
+    "Link function",
+    "Threshold structure",
+    "Final model AIC",
+    "Final model BIC",
+    "Final model log likelihood",
+    "Awareness-scale versus benchmark LRT p-value",
+    "Factor-coded versus linear scale LRT p-value",
+    "Primary effect-size presentation",
+    "Benchmark model role",
+    "Displayed feedback-composite range",
+    "Reason for restricted plotted range"
+  ),
+  
+  result = c(
+    "ai_comfort",
+    "Cumulative-link location-scale model",
+    paste(
+      "Prior AI experience;",
+      "AI awareness score;",
+      "feedback-experience composite"
+    ),
+    "AI awareness score",
+    "Logit",
+    "Flexible",
+    sprintf(
+      "%.2f",
+      AIC(
+        final_phase4B_model
+      )
+    ),
+    sprintf(
+      "%.2f",
+      BIC(
+        final_phase4B_model
+      )
+    ),
+    sprintf(
+      "%.2f",
+      as.numeric(
+        logLik(
+          final_phase4B_model
+        )
+      )
+    ),
+    "0.034",
+    "0.947",
+    "Adjusted predicted probabilities with 95% confidence intervals",
+    "Sensitivity/benchmark proportional-odds odds ratios",
+    "4.00 to 5.00",
+    paste0(
+      sprintf(
+        "%.1f%%",
+        feedback_ceiling_summary$
+          displayed_range_percent
+      ),
+      " of respondents scored within the displayed range; ",
+      sprintf(
+        "%.1f%%",
+        feedback_ceiling_summary$
+          maximum_score_percent
+      ),
+      " scored at the maximum of 5.00."
+    )
+  )
+)
+
+print(
+  phase4B_final_decision,
+  n = Inf,
+  width = Inf
+)
+
+# ------------------------------------------------------------------------------
+# 9. EXPORT CSV TABLES
 # ------------------------------------------------------------------------------
 
 write_csv(
-  missingness_summary,
+  final_model_coefficients,
   file.path(
-    output_dir,
-    "phase4B_missingness_summary.csv"
-  )
+    phase4B_final_dir,
+    "phase4B_final_model_coefficients.csv"
+  ),
+  na = ""
 )
 
 write_csv(
-  outcome_distribution,
+  awareness_scale_interpretation,
   file.path(
-    output_dir,
-    "phase4B_ai_comfort_distribution.csv"
-  )
+    phase4B_final_dir,
+    "phase4B_awareness_scale_interpretation.csv"
+  ),
+  na = ""
 )
 
 write_csv(
-  prior_experience_crosstab,
+  final_model_selection,
   file.path(
-    output_dir,
-    "phase4B_ai_comfort_by_prior_experience.csv"
-  )
+    phase4B_final_dir,
+    "phase4B_final_model_selection.csv"
+  ),
+  na = ""
 )
 
 write_csv(
-  awareness_crosstab,
+  comparison_awareness_scale_table,
   file.path(
-    output_dir,
-    "phase4B_ai_comfort_by_awareness.csv"
-  )
+    phase4B_final_dir,
+    "phase4B_comparison_awareness_scale.csv"
+  ),
+  na = ""
 )
 
 write_csv(
-  teaching_experience_crosstab,
+  comparison_scale_coding_table,
   file.path(
-    output_dir,
-    "phase4B_ai_comfort_by_teaching_experience.csv"
-  )
-)
-
-write_csv(
-  sparse_cell_summary,
-  file.path(
-    output_dir,
-    "phase4B_sparse_cell_summary.csv"
-  )
-)
-
-write_csv(
-  model_fit_summary,
-  file.path(
-    output_dir,
-    "phase4B_model_fit_summary.csv"
-  )
-)
-
-write_csv(
-  primary_odds_ratios,
-  file.path(
-    output_dir,
-    "phase4B_primary_odds_ratios.csv"
-  )
-)
-
-write_csv(
-  teaching_adjusted_odds_ratios,
-  file.path(
-    output_dir,
-    "phase4B_teaching_adjusted_odds_ratios.csv"
-  )
-)
-
-write_csv(
-  awareness_factor_odds_ratios,
-  file.path(
-    output_dir,
-    "phase4B_awareness_factor_odds_ratios.csv"
-  )
-)
-
-write_csv(
-  three_item_odds_ratios,
-  file.path(
-    output_dir,
-    "phase4B_three_item_composite_odds_ratios.csv"
-  )
+    phase4B_final_dir,
+    "phase4B_comparison_scale_coding.csv"
+  ),
+  na = ""
 )
 
 write_csv(
   nominal_test_table,
   file.path(
-    output_dir,
-    "phase4B_nominal_test.csv"
-  )
+    phase4B_final_dir,
+    "phase4B_nominal_effects_diagnostic.csv"
+  ),
+  na = ""
 )
 
 write_csv(
   scale_test_table,
   file.path(
-    output_dir,
-    "phase4B_scale_test.csv"
-  )
-)
-
-write_csv(
-  as.data.frame(comparison_null_background) |>
-    rownames_to_column("model") |>
-    as_tibble(),
-  file.path(
-    output_dir,
-    "phase4B_comparison_null_background.csv"
-  )
-)
-
-write_csv(
-  as.data.frame(comparison_background_primary) |>
-    rownames_to_column("model") |>
-    as_tibble(),
-  file.path(
-    output_dir,
-    "phase4B_comparison_background_primary.csv"
-  )
-)
-
-write_csv(
-  as.data.frame(comparison_primary_teaching) |>
-    rownames_to_column("model") |>
-    as_tibble(),
-  file.path(
-    output_dir,
-    "phase4B_comparison_primary_teaching.csv"
-  )
-)
-
-write_csv(
-  as.data.frame(comparison_awareness_coding) |>
-    rownames_to_column("model") |>
-    as_tibble(),
-  file.path(
-    output_dir,
-    "phase4B_comparison_awareness_coding.csv"
-  )
-)
-
-write_csv(
-  as.data.frame(primary_omnibus_tests) |>
-    rownames_to_column("term") |>
-    as_tibble(),
-  file.path(
-    output_dir,
-    "phase4B_primary_omnibus_tests.csv"
-  )
-)
-
-write_csv(
-  prior_full_probabilities,
-  file.path(
-    output_dir,
-    "phase4B_full_probabilities_by_prior_experience.csv"
-  )
-)
-
-write_csv(
-  prior_agreement_probability,
-  file.path(
-    output_dir,
-    "phase4B_agreement_probability_by_prior_experience.csv"
-  )
-)
-
-write_csv(
-  awareness_agreement_probability,
-  file.path(
-    output_dir,
-    "phase4B_agreement_probability_by_awareness.csv"
-  )
-)
-
-write_csv(
-  feedback_agreement_probability,
-  file.path(
-    output_dir,
-    "phase4B_agreement_probability_by_feedback_experience.csv"
-  )
-)
-
-ggsave(
-  filename = file.path(
-    output_dir,
-    "phase4B_predicted_agreement_prior_experience.png"
-  ),
-  plot = prior_probability_plot,
-  width = 9,
-  height = 6,
-  dpi = 300
-)
-
-ggsave(
-  filename = file.path(
-    output_dir,
-    "phase4B_predicted_agreement_awareness.png"
-  ),
-  plot = awareness_probability_plot,
-  width = 9,
-  height = 6,
-  dpi = 300
-)
-
-ggsave(
-  filename = file.path(
-    output_dir,
-    "phase4B_predicted_agreement_feedback_experience.png"
-  ),
-  plot = feedback_probability_plot,
-  width = 9,
-  height = 6,
-  dpi = 300
-)
-
-ggsave(
-  filename = file.path(
-    output_dir,
-    "phase4B_predicted_agreement_prior_experience.pdf"
-  ),
-  plot = prior_probability_plot,
-  width = 9,
-  height = 6
-)
-
-ggsave(
-  filename = file.path(
-    output_dir,
-    "phase4B_predicted_agreement_awareness.pdf"
-  ),
-  plot = awareness_probability_plot,
-  width = 9,
-  height = 6
-)
-
-ggsave(
-  filename = file.path(
-    output_dir,
-    "phase4B_predicted_agreement_feedback_experience.pdf"
-  ),
-  plot = feedback_probability_plot,
-  width = 9,
-  height = 6
-)
-
-saveRDS(
-  analysis_complete,
-  file.path(
-    output_dir,
-    "learner_analysis_phase4B_model_ready.rds"
-  )
-)
-
-write_csv(
-  analysis_complete,
-  file.path(
-    output_dir,
-    "learner_analysis_phase4B_model_ready.csv"
+    phase4B_final_dir,
+    "phase4B_scale_effects_diagnostic.csv"
   ),
   na = ""
 )
 
+write_csv(
+  awareness_probability_final,
+  file.path(
+    phase4B_final_dir,
+    "phase4B_adjusted_probability_by_awareness.csv"
+  ),
+  na = ""
+)
+
+write_csv(
+  feedback_probability_final,
+  file.path(
+    phase4B_final_dir,
+    "phase4B_adjusted_probability_by_feedback_and_awareness.csv"
+  ),
+  na = ""
+)
+
+write_csv(
+  primary_odds_ratios,
+  file.path(
+    phase4B_final_dir,
+    "phase4B_benchmark_proportional_odds_ratios.csv"
+  ),
+  na = ""
+)
+
+write_csv(
+  feedback_distribution,
+  file.path(
+    phase4B_final_dir,
+    "phase4B_feedback_composite_distribution.csv"
+  ),
+  na = ""
+)
+
+write_csv(
+  feedback_ceiling_summary,
+  file.path(
+    phase4B_final_dir,
+    "phase4B_feedback_composite_ceiling_summary.csv"
+  ),
+  na = ""
+)
+
+write_csv(
+  phase4B_final_decision,
+  file.path(
+    phase4B_final_dir,
+    "phase4B_final_analysis_decision.csv"
+  ),
+  na = ""
+)
+
+write_csv(
+  analysis_complete,
+  file.path(
+    phase4B_final_dir,
+    "learner_analysis_phase4B_final_model_ready.csv"
+  ),
+  na = ""
+)
+
+# ------------------------------------------------------------------------------
+# 10. EXPORT FINAL FIGURES
+# ------------------------------------------------------------------------------
+
+ggsave(
+  filename = file.path(
+    phase4B_final_dir,
+    "phase4B_adjusted_probability_by_awareness.png"
+  ),
+  plot = awareness_probability_plot_final,
+  width = 9,
+  height = 6,
+  dpi = 300
+)
+
+ggsave(
+  filename = file.path(
+    phase4B_final_dir,
+    "phase4B_adjusted_probability_by_awareness.pdf"
+  ),
+  plot = awareness_probability_plot_final,
+  width = 9,
+  height = 6
+)
+
+ggsave(
+  filename = file.path(
+    phase4B_final_dir,
+    "phase4B_adjusted_probability_by_feedback_faceted.png"
+  ),
+  plot = feedback_probability_plot_faceted,
+  width = 12,
+  height = 6.5,
+  dpi = 300
+)
+
+ggsave(
+  filename = file.path(
+    phase4B_final_dir,
+    "phase4B_adjusted_probability_by_feedback_faceted.pdf"
+  ),
+  plot = feedback_probability_plot_faceted,
+  width = 12,
+  height = 6.5
+)
+
+if (
+  exists(
+    "feedback_probability_plot_final",
+    inherits = TRUE
+  )
+) {
+  ggsave(
+    filename = file.path(
+      phase4B_final_dir,
+      "phase4B_adjusted_probability_by_feedback_combined.png"
+    ),
+    plot = feedback_probability_plot_final,
+    width = 10,
+    height = 6.5,
+    dpi = 300
+  )
+  
+  ggsave(
+    filename = file.path(
+      phase4B_final_dir,
+      "phase4B_adjusted_probability_by_feedback_combined.pdf"
+    ),
+    plot = feedback_probability_plot_final,
+    width = 10,
+    height = 6.5
+  )
+}
+
+if (
+  exists(
+    "feedback_distribution_plot",
+    inherits = TRUE
+  )
+) {
+  ggsave(
+    filename = file.path(
+      phase4B_final_dir,
+      "phase4B_feedback_composite_distribution.png"
+    ),
+    plot = feedback_distribution_plot,
+    width = 9,
+    height = 6,
+    dpi = 300
+  )
+  
+  ggsave(
+    filename = file.path(
+      phase4B_final_dir,
+      "phase4B_feedback_composite_distribution.pdf"
+    ),
+    plot = feedback_distribution_plot,
+    width = 9,
+    height = 6
+  )
+}
+
+# ------------------------------------------------------------------------------
+# 11. SAVE R OBJECTS AND MODEL-READY DATA
+# ------------------------------------------------------------------------------
+
+saveRDS(
+  final_phase4B_model,
+  file.path(
+    phase4B_final_dir,
+    "phase4B_final_awareness_scale_model.rds"
+  )
+)
+
+saveRDS(
+  analysis_complete,
+  file.path(
+    phase4B_final_dir,
+    "learner_analysis_phase4B_final_model_ready.rds"
+  )
+)
+
 saveRDS(
   list(
-    input_source = input_source,
-    feedback_experience_mean =
-      feedback_experience_mean,
-    feedback_experience_3item_mean =
-      feedback_experience_3item_mean,
-    model_null = model_null,
-    model_background = model_background,
-    model_primary = model_primary,
-    model_teaching_adjusted =
-      model_teaching_adjusted,
-    model_awareness_factor =
-      model_awareness_factor,
-    model_three_item_composite =
-      model_three_item_composite,
-    model_probit = model_probit,
-    nominal_test = nominal_test_result,
-    scale_test = scale_test_result,
-    primary_odds_ratios =
+    final_model =
+      final_phase4B_model,
+    
+    benchmark_model =
+      model_primary,
+    
+    factor_scale_sensitivity_model =
+      model_awareness_scale_factor,
+    
+    final_model_coefficients =
+      final_model_coefficients,
+    
+    final_model_selection =
+      final_model_selection,
+    
+    awareness_scale_interpretation =
+      awareness_scale_interpretation,
+    
+    comparison_awareness_scale =
+      comparison_awareness_scale,
+    
+    comparison_scale_coding =
+      comparison_scale_coding,
+    
+    nominal_effects_diagnostic =
+      nominal_test_table,
+    
+    scale_effects_diagnostic =
+      scale_test_table,
+    
+    adjusted_probability_by_awareness =
+      awareness_probability_final,
+    
+    adjusted_probability_by_feedback_and_awareness =
+      feedback_probability_final,
+    
+    benchmark_odds_ratios =
       primary_odds_ratios,
-    model_fit_summary =
-      model_fit_summary
+    
+    feedback_distribution =
+      feedback_distribution,
+    
+    feedback_ceiling_summary =
+      feedback_ceiling_summary,
+    
+    final_analysis_decision =
+      phase4B_final_decision
   ),
   file.path(
-    output_dir,
-    "phase4B_analysis_objects.rds"
+    phase4B_final_dir,
+    "phase4B_final_analysis_objects.rds"
+  )
+)
+
+# ------------------------------------------------------------------------------
+# 12. SAVE TEXT SUMMARIES AND SESSION INFORMATION
+# ------------------------------------------------------------------------------
+
+writeLines(
+  capture.output(
+    summary(
+      final_phase4B_model
+    )
+  ),
+  file.path(
+    phase4B_final_dir,
+    "phase4B_final_model_summary.txt"
   )
 )
 
 writeLines(
   capture.output(
-    summary(model_primary)
+    summary(
+      model_primary
+    )
   ),
   file.path(
-    output_dir,
-    "phase4B_primary_model_summary.txt"
+    phase4B_final_dir,
+    "phase4B_benchmark_model_summary.txt"
   )
 )
 
@@ -1831,54 +2395,73 @@ writeLines(
     sessionInfo()
   ),
   file.path(
-    output_dir,
+    phase4B_final_dir,
     "phase4B_session_info.txt"
   )
 )
 
-
 # ------------------------------------------------------------------------------
-# 14. FINAL VALIDATION
+# 13. FINAL EXPORT VALIDATION
 # ------------------------------------------------------------------------------
 
-required_exports <- c(
-  "phase4B_ai_comfort_distribution.csv",
-  "phase4B_model_fit_summary.csv",
-  "phase4B_primary_odds_ratios.csv",
-  "phase4B_nominal_test.csv",
-  "phase4B_scale_test.csv",
-  "phase4B_agreement_probability_by_prior_experience.csv",
-  "phase4B_agreement_probability_by_awareness.csv",
-  "phase4B_agreement_probability_by_feedback_experience.csv",
-  "phase4B_predicted_agreement_prior_experience.png",
-  "phase4B_predicted_agreement_awareness.png",
-  "phase4B_predicted_agreement_feedback_experience.png",
-  "learner_analysis_phase4B_model_ready.rds",
-  "phase4B_analysis_objects.rds",
-  "phase4B_primary_model_summary.txt",
+required_final_files <- c(
+  "phase4B_final_model_coefficients.csv",
+  "phase4B_awareness_scale_interpretation.csv",
+  "phase4B_final_model_selection.csv",
+  "phase4B_comparison_awareness_scale.csv",
+  "phase4B_comparison_scale_coding.csv",
+  "phase4B_nominal_effects_diagnostic.csv",
+  "phase4B_scale_effects_diagnostic.csv",
+  "phase4B_adjusted_probability_by_awareness.csv",
+  "phase4B_adjusted_probability_by_feedback_and_awareness.csv",
+  "phase4B_benchmark_proportional_odds_ratios.csv",
+  "phase4B_feedback_composite_distribution.csv",
+  "phase4B_feedback_composite_ceiling_summary.csv",
+  "phase4B_final_analysis_decision.csv",
+  "learner_analysis_phase4B_final_model_ready.csv",
+  "learner_analysis_phase4B_final_model_ready.rds",
+  "phase4B_adjusted_probability_by_awareness.png",
+  "phase4B_adjusted_probability_by_awareness.pdf",
+  "phase4B_adjusted_probability_by_feedback_faceted.png",
+  "phase4B_adjusted_probability_by_feedback_faceted.pdf",
+  "phase4B_final_awareness_scale_model.rds",
+  "phase4B_final_analysis_objects.rds",
+  "phase4B_final_model_summary.txt",
+  "phase4B_benchmark_model_summary.txt",
   "phase4B_session_info.txt"
 )
 
-export_check <- tibble(
-  file = required_exports,
-  exists = file.exists(
-    file.path(
-      output_dir,
-      required_exports
+phase4B_export_check <- tibble(
+  file =
+    required_final_files,
+  
+  exists =
+    file.exists(
+      file.path(
+        phase4B_final_dir,
+        required_final_files
+      )
     )
-  )
 )
 
 print(
-  export_check,
+  phase4B_export_check,
   n = Inf
 )
 
 stopifnot(
-  all(export_check$exists)
+  all(
+    phase4B_export_check$exists
+  )
 )
 
 message(
-  "Phase 4B completed successfully. Outputs were saved to:\n",
-  output_dir
+  paste0(
+    "\nPhase 4B final export completed successfully.\n",
+    "Files were saved to:\n",
+    phase4B_final_dir,
+    "\n"
+  )
 )
+
+

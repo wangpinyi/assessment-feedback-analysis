@@ -1,0 +1,16 @@
+feature,result
+Final outcome,ai_comfort
+Final model,Cumulative-link location-scale model
+Location predictors,Prior AI experience; AI awareness score; feedback-experience composite
+Scale predictor,AI awareness score
+Link function,Logit
+Threshold structure,Flexible
+Final model AIC,406.33
+Final model BIC,437.69
+Final model log likelihood,-193.16
+Awareness-scale versus benchmark LRT p-value,0.034
+Factor-coded versus linear scale LRT p-value,0.947
+Primary effect-size presentation,Adjusted predicted probabilities with 95% confidence intervals
+Benchmark model role,Sensitivity/benchmark proportional-odds odds ratios
+Displayed feedback-composite range,4.00 to 5.00
+Reason for restricted plotted range,97.1% of respondents scored within the displayed range; 71.2% scored at the maximum of 5.00.

@@ -1,0 +1,29 @@
+formula: ai_comfort ~ prior_ai_experience + ai_awareness_score + feedback_experience_half_point
+scale:   ~ai_awareness_score
+data:    analysis_complete
+
+ link  threshold nobs logLik  AIC    niter max.grad cond.H 
+ logit flexible  170  -193.16 406.33 8(0)  3.27e-08 1.3e+03
+
+Coefficients:
+                                        Estimate Std. Error z value Pr(>|z|)    
+prior_ai_experienceMinimal experience    -0.2918     0.5360  -0.544 0.586182    
+prior_ai_experienceSome experience        0.9247     0.6105   1.515 0.129846    
+prior_ai_experienceExtensive experience   4.8073     1.9785   2.430 0.015110 *  
+ai_awareness_score                        1.3512     0.3600   3.753 0.000175 ***
+feedback_experience_half_point            0.6694     0.2543   2.632 0.008494 ** 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+log-scale coefficients:
+                   Estimate Std. Error z value Pr(>|z|)  
+ai_awareness_score   0.2582     0.1200   2.152   0.0314 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Threshold coefficients:
+                                             Estimate Std. Error z value
+Strongly disagree|Somewhat disagree           -2.8894     0.6914  -4.179
+Somewhat disagree|Neither agree nor disagree  -1.4860     0.4981  -2.983
+Neither agree nor disagree|Somewhat agree      0.5087     0.4497   1.131
+Somewhat agree|Strongly agree                  2.8526     0.7291   3.912

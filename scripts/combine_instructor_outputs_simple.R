@@ -2,8 +2,6 @@
 # INSTRUCTOR OUTPUTS: COMBINE INTO ONE PLAIN, REPORT-READY EXCEL WORKBOOK
 # ==============================================================================
 
-# Install once if needed:
-# install.packages(c("openxlsx", "dplyr", "tibble", "here"))
 
 library(openxlsx)
 library(dplyr)
@@ -14,7 +12,7 @@ library(here)
 # 1. FILE PATHS
 # ------------------------------------------------------------------------------
 
-output_dir <- here("outputs", "tables")
+output_dir <- here("output", "instructor", "tables")
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 files <- c(

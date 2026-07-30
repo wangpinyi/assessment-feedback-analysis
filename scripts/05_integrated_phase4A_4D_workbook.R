@@ -15,6 +15,7 @@ graphics.off()
 options(scipen = 999)
 
 library(tidyverse)
+library(ordinal)
 library(here)
 
 here::i_am(
@@ -1243,15 +1244,41 @@ phase4B_outcome_distribution <- phase4A_data |>
     valid_n = sum(n)
   )
 
+# ------------------------------------------------------------------------------
+# PHASE 4B FINAL MODEL FIT
+# ------------------------------------------------------------------------------
+
+phase4B_log_likelihood <- logLik(
+  phase4B_objects$final_model
+)
+
+phase4B_convergence_code <- if (
+  !is.null(
+    phase4B_objects$final_model$optRes$convergence
+  )
+) {
+  as.integer(
+    phase4B_objects$final_model$optRes$convergence
+  )
+} else if (
+  !is.null(
+    phase4B_objects$final_model$convergence
+  )
+) {
+  as.integer(
+    phase4B_objects$final_model$convergence
+  )
+} else {
+  NA_integer_
+}
+
 phase4B_model_fit <- tibble(
   analytic_n = nobs(
     phase4B_objects$final_model
   ),
   
   log_likelihood = as.numeric(
-    logLik(
-      phase4B_objects$final_model
-    )
+    phase4B_log_likelihood
   ),
   
   AIC = AIC(
@@ -1259,19 +1286,12 @@ phase4B_model_fit <- tibble(
   ),
   
   number_of_parameters = attr(
-    logLik(
-      phase4B_objects$final_model
-    ),
+    phase4B_log_likelihood,
     "df"
   ),
   
   convergence_code =
-    phase4B_objects$final_model$convergence
-)
-
-inspect_report_table(
-  phase4B_outcome_distribution,
-  "PHASE 4B AI-COMFORT DISTRIBUTION"
+    phase4B_convergence_code
 )
 
 inspect_report_table(
@@ -1586,3 +1606,2985 @@ cat(
   "cross-phase synthesis, and headline-metrics tables.\n",
   sep = ""
 )
+
+
+
+# ==============================================================================
+# PHASE 5, BLOCK 4: BUILD VERIFIED CROSS-PHASE SUMMARY TABLES
+# ==============================================================================
+
+
+# ------------------------------------------------------------------------------
+# 27. HELPER FUNCTIONS
+# ------------------------------------------------------------------------------
+
+format_p_value <- function(
+    p_value
+) {
+  case_when(
+    is.na(p_value) ~
+      NA_character_,
+    
+    p_value < 0.001 ~
+      "< .001",
+    
+    TRUE ~
+      paste0(
+        "= ",
+        sprintf(
+          "%.3f",
+          p_value
+        )
+      )
+  )
+}
+
+
+format_percent_value <- function(
+    value,
+    digits = 1
+) {
+  paste0(
+    sprintf(
+      paste0(
+        "%.",
+        digits,
+        "f"
+      ),
+      value
+    ),
+    "%"
+  )
+}
+
+
+# ------------------------------------------------------------------------------
+# 28. CORRECT PHASE 4A HEADLINE RESULTS
+# ------------------------------------------------------------------------------
+
+# The four-item CFA was inadmissible because of a negative residual variance
+# and a standardized loading above 1.00. CFA-based omega and CFA fit indices
+# are therefore excluded from the integrated headline results.
+
+phase4A_average_polychoric_correlation <- mean(
+  phase4A_objects$polychoric_matrix[
+    upper.tri(
+      phase4A_objects$polychoric_matrix
+    )
+  ]
+)
+
+phase4A_minimum_polychoric_correlation <- min(
+  phase4A_objects$polychoric_matrix[
+    upper.tri(
+      phase4A_objects$polychoric_matrix
+    )
+  ]
+)
+
+phase4A_maximum_polychoric_correlation <- max(
+  phase4A_objects$polychoric_matrix[
+    upper.tri(
+      phase4A_objects$polychoric_matrix
+    )
+  ]
+)
+
+phase4A_primary_sensitivity_correlation <-
+  phase4A_objects$measurement_decision |>
+  filter(
+    feature ==
+      "Correlation between primary and sensitivity scores"
+  ) |>
+  pull(
+    result
+  ) |>
+  as.numeric()
+
+phase4A_headline_metrics_verified <- tibble(
+  result = c(
+    "Analytic sample",
+    "Ordinal alpha",
+    "Average polychoric correlation",
+    "Range of polychoric correlations",
+    "Variance represented by first component",
+    "Feedback-experience composite mean",
+    "Feedback-experience composite SD",
+    "Maximum-score respondents",
+    "Primary-sensitivity composite correlation",
+    "Measurement decision"
+  ),
+  
+  estimate = c(
+    as.character(
+      phase4A_feedback_summary$analytic_n
+    ),
+    
+    sprintf(
+      "%.3f",
+      phase4A_objects$ordinal_alpha
+    ),
+    
+    sprintf(
+      "%.3f",
+      phase4A_average_polychoric_correlation
+    ),
+    
+    paste0(
+      sprintf(
+        "%.3f",
+        phase4A_minimum_polychoric_correlation
+      ),
+      " to ",
+      sprintf(
+        "%.3f",
+        phase4A_maximum_polychoric_correlation
+      )
+    ),
+    
+    format_percent_value(
+      100 *
+        phase4A_eigenvalue_summary$
+        proportion_of_variance[1]
+    ),
+    
+    sprintf(
+      "%.2f",
+      phase4A_feedback_summary$composite_mean
+    ),
+    
+    sprintf(
+      "%.3f",
+      phase4A_feedback_summary$composite_sd
+    ),
+    
+    format_percent_value(
+      phase4A_feedback_summary$
+        maximum_score_percent
+    ),
+    
+    sprintf(
+      "%.3f",
+      phase4A_primary_sensitivity_correlation
+    ),
+    
+    paste0(
+      "Retain the four-item unit-weighted index; ",
+      "do not interpret the inadmissible CFA."
+    )
+  ),
+  
+  interpretation = c(
+    "All 170 respondents had complete data for the four feedback items.",
+    
+    "The four-item index demonstrated strong ordinal reliability.",
+    
+    "The feedback items were strongly related at the latent-response level.",
+    
+    "All item pairs were positively associated, although the strength varied across pairs.",
+    
+    "A dominant first component supported summarizing the items with one overall feedback-experience score.",
+    
+    "Learners reported exceptionally favorable feedback experiences.",
+    
+    "The composite displayed limited variability.",
+    
+    "The pronounced ceiling effect limits differentiation among respondents with very positive feedback experiences.",
+    
+    "The four-item and three-item scores produced nearly identical respondent rankings.",
+    
+    "The four-item index is retained for substantive coverage, with the three-item version used as a sensitivity measure."
+  ),
+  
+  reporting_caution = c(
+    NA_character_,
+    NA_character_,
+    NA_character_,
+    NA_character_,
+    NA_character_,
+    NA_character_,
+    "Interpret regression estimates in light of the restricted score variation.",
+    "Do not treat the composite as finely distinguishing highly satisfied respondents.",
+    NA_character_,
+    paste0(
+      "Do not report CFA-based omega or global CFA fit because ",
+      "the four-item CFA was inadmissible."
+    )
+  )
+)
+
+
+# ------------------------------------------------------------------------------
+# 29. CORRECT PHASE 4B MODEL FIT
+# ------------------------------------------------------------------------------
+
+phase4B_model_fit_verified <- phase4B_objects$
+  final_model_selection |>
+  filter(
+    model ==
+      "Final linear awareness-scale model"
+  ) |>
+  transmute(
+    selected_model = model,
+    analytic_n = n,
+    number_of_parameters,
+    log_likelihood,
+    AIC,
+    BIC,
+    maximum_absolute_gradient,
+    hessian_condition_number,
+    link
+  )
+
+stopifnot(
+  nrow(
+    phase4B_model_fit_verified
+  ) == 1
+)
+
+
+# ------------------------------------------------------------------------------
+# 30. CREATE PHASE 4B EFFECT TABLE
+# ------------------------------------------------------------------------------
+
+phase4B_effects_verified <- phase4B_objects$
+  final_model_coefficients |>
+  filter(
+    parameter %in% c(
+      "prior_ai_experienceExtensive.experience",
+      "ai_awareness_score",
+      "feedback_experience_half_point",
+      "ai_awareness_score.1"
+    )
+  ) |>
+  mutate(
+    effect = case_when(
+      parameter ==
+        "prior_ai_experienceExtensive.experience" ~
+        "Extensive prior AI experience versus no experience",
+      
+      parameter ==
+        "ai_awareness_score" ~
+        "AI awareness: location effect",
+      
+      parameter ==
+        "feedback_experience_half_point" ~
+        "Feedback experience: 0.5-point increase",
+      
+      parameter ==
+        "ai_awareness_score.1" ~
+        "AI awareness: log-scale effect",
+      
+      TRUE ~
+        parameter
+    ),
+    
+    effect_type = case_when(
+      parameter ==
+        "ai_awareness_score.1" ~
+        "Scale effect",
+      
+      TRUE ~
+        "Location effect"
+    ),
+    
+    p_value_display = map_chr(
+      p_value,
+      format_p_value
+    )
+  ) |>
+  select(
+    effect,
+    effect_type,
+    estimate,
+    standard_error,
+    z_value,
+    p_value,
+    p_value_display,
+    confidence_low,
+    confidence_high
+  )
+
+phase4B_awareness_probabilities_verified <- phase4B_objects$
+  adjusted_probability_by_awareness |>
+  transmute(
+    ai_awareness,
+    predicted_agreement_probability =
+      predicted_probability,
+    
+    predicted_percent =
+      100 * predicted_probability,
+    
+    confidence_low_percent =
+      100 * confidence_low,
+    
+    confidence_high_percent =
+      100 * confidence_high
+  )
+
+
+# ------------------------------------------------------------------------------
+# 31. CREATE PHASE 4B HEADLINE SUMMARY
+# ------------------------------------------------------------------------------
+
+phase4B_headline_summary <- tibble(
+  finding = c(
+    "Extensive prior AI experience",
+    "AI awareness",
+    "Feedback experience",
+    "Adjusted comfort probability by awareness",
+    "Model form"
+  ),
+  
+  evidence = c(
+    paste0(
+      "Location coefficient = ",
+      sprintf(
+        "%.2f",
+        phase4B_effects_verified |>
+          filter(
+            effect ==
+              "Extensive prior AI experience versus no experience"
+          ) |>
+          pull(
+            estimate
+          )
+      ),
+      ", p ",
+      phase4B_effects_verified |>
+        filter(
+          effect ==
+            "Extensive prior AI experience versus no experience"
+        ) |>
+        pull(
+          p_value_display
+        )
+    ),
+    
+    paste0(
+      "Location coefficient = ",
+      sprintf(
+        "%.2f",
+        phase4B_effects_verified |>
+          filter(
+            effect ==
+              "AI awareness: location effect"
+          ) |>
+          pull(
+            estimate
+          )
+      ),
+      ", p ",
+      phase4B_effects_verified |>
+        filter(
+          effect ==
+            "AI awareness: location effect"
+        ) |>
+        pull(
+          p_value_display
+        ),
+      "; log-scale coefficient = ",
+      sprintf(
+        "%.3f",
+        phase4B_effects_verified |>
+          filter(
+            effect ==
+              "AI awareness: log-scale effect"
+          ) |>
+          pull(
+            estimate
+          )
+      ),
+      ", p ",
+      phase4B_effects_verified |>
+        filter(
+          effect ==
+            "AI awareness: log-scale effect"
+        ) |>
+        pull(
+          p_value_display
+        )
+    ),
+    
+    paste0(
+      "Location coefficient per 0.5-point increase = ",
+      sprintf(
+        "%.3f",
+        phase4B_effects_verified |>
+          filter(
+            effect ==
+              "Feedback experience: 0.5-point increase"
+          ) |>
+          pull(
+            estimate
+          )
+      ),
+      ", p ",
+      phase4B_effects_verified |>
+        filter(
+          effect ==
+            "Feedback experience: 0.5-point increase"
+        ) |>
+        pull(
+          p_value_display
+        )
+    ),
+    
+    paste0(
+      "Probability of somewhat or strongly agreeing with AI comfort: ",
+      "48.6% among respondents not aware of AI use, ",
+      "71.8% among somewhat aware respondents, and ",
+      "82.2% among fully aware respondents."
+    ),
+    
+    paste0(
+      "Cumulative-link location-scale model; AIC = ",
+      sprintf(
+        "%.2f",
+        phase4B_model_fit_verified$AIC
+      ),
+      "."
+    )
+  ),
+  
+  interpretation = c(
+    "Respondents with extensive prior AI experience reported greater comfort with AI-supported feedback.",
+    
+    "Greater awareness corresponded with higher comfort, but awareness also changed the dispersion of the latent comfort response.",
+    
+    "More favorable feedback experiences were associated with greater AI comfort.",
+    
+    "The adjusted probabilities show a substantial increase in comfort across awareness levels.",
+    
+    "Because awareness affected both location and scale, adjusted probabilities are preferable to a single proportional-odds ratio."
+  )
+)
+
+
+# ------------------------------------------------------------------------------
+# 32. CORRECT PHASE 4C MODEL FIT
+# ------------------------------------------------------------------------------
+
+phase4C_model_fit_verified <- phase4C_objects$
+  final_model_fit_comparison |>
+  filter(
+    model ==
+      "Comfort-added AI-comfort scale model"
+  )
+
+stopifnot(
+  nrow(
+    phase4C_model_fit_verified
+  ) == 1
+)
+
+
+# ------------------------------------------------------------------------------
+# 33. CREATE PHASE 4C EFFECT TABLE
+# ------------------------------------------------------------------------------
+
+phase4C_effects_verified <- phase4C_model_coefficient_matrix |>
+  filter(
+    parameter %in% c(
+      "ai_comfort_score",
+      "ai_comfort_score.1"
+    )
+  ) |>
+  transmute(
+    effect = case_when(
+      parameter ==
+        "ai_comfort_score" ~
+        "AI comfort: location effect",
+      
+      parameter ==
+        "ai_comfort_score.1" ~
+        "AI comfort: log-scale effect"
+    ),
+    
+    effect_type = case_when(
+      parameter ==
+        "ai_comfort_score" ~
+        "Location effect",
+      
+      parameter ==
+        "ai_comfort_score.1" ~
+        "Scale effect"
+    ),
+    
+    estimate = Estimate,
+    standard_error = `Std. Error`,
+    z_value = `z value`,
+    p_value = `Pr(>|z|)`,
+    
+    p_value_display = map_chr(
+      p_value,
+      format_p_value
+    )
+  )
+
+phase4C_feedback_addition_p <- phase4C_objects$
+  feedback_addition_comparison |>
+  filter(
+    !is.na(
+      `Pr(>Chisq)`
+    )
+  ) |>
+  pull(
+    `Pr(>Chisq)`
+  )
+
+phase4C_location_scale_p <- phase4C_objects$
+  proportional_vs_scale_comparison |>
+  filter(
+    !is.na(
+      `Pr(>Chisq)`
+    )
+  ) |>
+  pull(
+    `Pr(>Chisq)`
+  )
+
+
+# ------------------------------------------------------------------------------
+# 34. CREATE PHASE 4C HEADLINE SUMMARY
+# ------------------------------------------------------------------------------
+
+phase4C_lowest_comfort_probability <- phase4C_objects$
+  predicted_probabilities |>
+  filter(
+    ai_comfort_score == 0
+  ) |>
+  pull(
+    predicted_probability
+  )
+
+phase4C_highest_comfort_probability <- phase4C_objects$
+  predicted_probabilities |>
+  filter(
+    ai_comfort_score == 4
+  ) |>
+  pull(
+    predicted_probability
+  )
+
+phase4C_headline_summary <- tibble(
+  finding = c(
+    "Observed perceived usefulness",
+    "AI comfort",
+    "Adjusted usefulness probability",
+    "Location-scale model improvement",
+    "Feedback-experience contribution"
+  ),
+  
+  evidence = c(
+    paste0(
+      phase4C_observed_agreement$agreement_n,
+      " of ",
+      phase4C_observed_agreement$analytic_n,
+      " respondents (",
+      format_percent_value(
+        phase4C_observed_agreement$
+          agreement_percent
+      ),
+      ") somewhat or strongly agreed that AI-generated feedback ",
+      "could be as useful as human feedback."
+    ),
+    
+    paste0(
+      "Location coefficient = ",
+      sprintf(
+        "%.2f",
+        phase4C_effects_verified |>
+          filter(
+            effect ==
+              "AI comfort: location effect"
+          ) |>
+          pull(
+            estimate
+          )
+      ),
+      ", p ",
+      phase4C_effects_verified |>
+        filter(
+          effect ==
+            "AI comfort: location effect"
+        ) |>
+        pull(
+          p_value_display
+        ),
+      "; log-scale coefficient = ",
+      sprintf(
+        "%.3f",
+        phase4C_effects_verified |>
+          filter(
+            effect ==
+              "AI comfort: log-scale effect"
+          ) |>
+          pull(
+            estimate
+          )
+      ),
+      ", p ",
+      phase4C_effects_verified |>
+        filter(
+          effect ==
+            "AI comfort: log-scale effect"
+        ) |>
+        pull(
+          p_value_display
+        )
+    ),
+    
+    paste0(
+      "Adjusted agreement probability increased from ",
+      scales::percent(
+        phase4C_lowest_comfort_probability,
+        accuracy = 0.1
+      ),
+      " at the lowest comfort level to ",
+      scales::percent(
+        phase4C_highest_comfort_probability,
+        accuracy = 0.1
+      ),
+      " at the highest comfort level."
+    ),
+    
+    paste0(
+      "Likelihood-ratio test p ",
+      format_p_value(
+        phase4C_location_scale_p
+      ),
+      "; selected-model AIC = ",
+      sprintf(
+        "%.2f",
+        phase4C_model_fit_verified$AIC
+      ),
+      "."
+    ),
+    
+    paste0(
+      "Adding feedback experience after AI comfort: ",
+      "likelihood-ratio test p ",
+      format_p_value(
+        phase4C_feedback_addition_p
+      ),
+      "."
+    )
+  ),
+  
+  interpretation = c(
+    "A majority of respondents viewed AI-generated feedback as potentially comparable in usefulness to human feedback.",
+    
+    "AI comfort was strongly associated with perceived AI usefulness and also affected latent-response dispersion.",
+    
+    "Comfort clearly distinguished respondents with low versus high adjusted probabilities of viewing AI feedback as useful.",
+    
+    "The location-scale model fit better than the proportional-odds benchmark.",
+    
+    "Feedback experience did not improve the usefulness model after AI comfort was included."
+  )
+)
+
+
+# ------------------------------------------------------------------------------
+# 35. CREATE PHASE 4D VERIFIED SUMMARY TABLES
+# ------------------------------------------------------------------------------
+
+phase4D_usefulness_addition_p <- phase4D_objects$
+  reduced_model_comparisons |>
+  filter(
+    comparison ==
+      "Feedback only versus feedback plus usefulness"
+  ) |>
+  pull(
+    p_value
+  )
+
+phase4D_feedback_addition_p <- phase4D_objects$
+  reduced_model_comparisons |>
+  filter(
+    comparison ==
+      "Usefulness only versus usefulness plus feedback"
+  ) |>
+  pull(
+    p_value
+  )
+
+phase4D_universal_review_percent <- phase4D_objects$
+  human_review_summary |>
+  filter(
+    metric ==
+      "Preferred universal human review"
+  ) |>
+  pull(
+    percent
+  )
+
+phase4D_directional_universal_review_percent <-
+  phase4D_objects$human_review_summary |>
+  filter(
+    metric ==
+      "Universal review among directional preferences"
+  ) |>
+  pull(
+    percent
+  )
+
+phase4D_ai_forward_low <- phase4D_objects$
+  grouped_probabilities |>
+  filter(
+    ai_usefulness_score == 0,
+    preference_group ==
+      "AI-forward feedback model"
+  ) |>
+  pull(
+    predicted_probability
+  )
+
+phase4D_ai_forward_high <- phase4D_objects$
+  grouped_probabilities |>
+  filter(
+    ai_usefulness_score == 4,
+    preference_group ==
+      "AI-forward feedback model"
+  ) |>
+  pull(
+    predicted_probability
+  )
+
+phase4D_headline_summary <- tibble(
+  finding = c(
+    "Largest preferred-model category",
+    "Universal human review",
+    "Perceived AI usefulness",
+    "Feedback experience",
+    "Adjusted AI-forward preference"
+  ),
+  
+  evidence = c(
+    paste0(
+      "Human-led grading with AI support: 66 of 169 respondents (39.1%)."
+    ),
+    
+    paste0(
+      "111 of 169 respondents (",
+      format_percent_value(
+        phase4D_universal_review_percent
+      ),
+      ") preferred universal human review. Among respondents with ",
+      "a directional preference, the percentage was ",
+      format_percent_value(
+        phase4D_directional_universal_review_percent
+      ),
+      "."
+    ),
+    
+    paste0(
+      "Adding perceived usefulness to a feedback-only model: ",
+      "likelihood-ratio test p ",
+      format_p_value(
+        phase4D_usefulness_addition_p
+      ),
+      "."
+    ),
+    
+    paste0(
+      "Adding feedback experience to a usefulness-only model: ",
+      "likelihood-ratio test p ",
+      format_p_value(
+        phase4D_feedback_addition_p
+      ),
+      "."
+    ),
+    
+    paste0(
+      "Adjusted probability of an AI-forward feedback model increased ",
+      "from ",
+      scales::percent(
+        phase4D_ai_forward_low,
+        accuracy = 0.1
+      ),
+      " among respondents who strongly disagreed that AI feedback was ",
+      "as useful as human feedback to ",
+      scales::percent(
+        phase4D_ai_forward_high,
+        accuracy = 0.1
+      ),
+      " among those who strongly agreed."
+    )
+  ),
+  
+  interpretation = c(
+    "The most common single preference retained instructor control and used AI only as a support tool.",
+    
+    "Learners generally accepted AI assistance while retaining a strong preference for universal human accountability.",
+    
+    "Perceived AI usefulness substantially distinguished preferred feedback models.",
+    
+    paste0(
+      "Feedback experience improved overall model fit even though its ",
+      "individual category-specific Wald coefficients were not statistically ",
+      "significant."
+    ),
+    
+    "More favorable perceptions of AI usefulness corresponded with substantially more AI-forward implementation preferences."
+  )
+)
+
+
+# ------------------------------------------------------------------------------
+# 36. CREATE THE INTEGRATED EXECUTIVE SUMMARY
+# ------------------------------------------------------------------------------
+
+phase5_executive_summary <- tibble(
+  phase = c(
+    "Phase 4A",
+    "Phase 4B",
+    "Phase 4C",
+    "Phase 4D"
+  ),
+  
+  analytic_focus = c(
+    "Feedback-experience measurement",
+    "AI comfort",
+    "Perceived AI usefulness",
+    "Preferred feedback model"
+  ),
+  
+  key_result = c(
+    paste0(
+      "The four feedback items formed a strongly reliable ordinal index ",
+      "(ordinal alpha = ",
+      sprintf(
+        "%.3f",
+        phase4A_objects$ordinal_alpha
+      ),
+      "). The composite mean was ",
+      sprintf(
+        "%.2f",
+        phase4A_feedback_summary$composite_mean
+      ),
+      ", and ",
+      format_percent_value(
+        phase4A_feedback_summary$
+          maximum_score_percent
+      ),
+      " received the maximum score."
+    ),
+    
+    paste0(
+      "Greater AI comfort was associated with extensive prior AI experience, ",
+      "greater awareness of AI use, and more favorable feedback experience. ",
+      "Adjusted comfort probability increased from 48.6% among respondents ",
+      "not aware of AI use to 82.2% among fully aware respondents."
+    ),
+    
+    paste0(
+      format_percent_value(
+        phase4C_observed_agreement$
+          agreement_percent
+      ),
+      " agreed that AI-generated feedback could be as useful as human ",
+      "feedback. Adjusted agreement increased from ",
+      scales::percent(
+        phase4C_lowest_comfort_probability,
+        accuracy = 0.1
+      ),
+      " to ",
+      scales::percent(
+        phase4C_highest_comfort_probability,
+        accuracy = 0.1
+      ),
+      " across the AI-comfort scale."
+    ),
+    
+    paste0(
+      format_percent_value(
+        phase4D_universal_review_percent
+      ),
+      " preferred a model involving universal human review. The adjusted ",
+      "probability of an AI-forward model increased from ",
+      scales::percent(
+        phase4D_ai_forward_low,
+        accuracy = 0.1
+      ),
+      " to ",
+      scales::percent(
+        phase4D_ai_forward_high,
+        accuracy = 0.1
+      ),
+      " across perceived AI-usefulness levels."
+    )
+  ),
+  
+  interpretation = c(
+    "The current feedback process provides a strong experiential foundation, but the severe ceiling effect limits differentiation among highly positive experiences.",
+    
+    "AI readiness corresponds with prior exposure, transparency, and learners' experiences of the feedback process.",
+    
+    "AI comfort is the clearest bridge between general readiness and believing that AI-generated feedback is useful.",
+    
+    "Learners distinguish between viewing AI as useful and granting AI unrestricted responsibility for feedback or grading."
+  ),
+  
+  reporting_caution = c(
+    "The four-item CFA was inadmissible; the scale should be described as a reliable unit-weighted index rather than a confirmed latent factor.",
+    
+    "AI awareness affected both the location and scale components of comfort, so adjusted probabilities are more interpretable than one proportional-odds ratio.",
+    
+    "The selected location-scale model had an elevated Hessian condition number, so emphasis should remain on adjusted probabilities and the overall pattern.",
+    
+    "The multinomial analysis was associational, and sparse predictor-by-outcome cells warrant caution with individual category-specific estimates."
+  )
+)
+
+
+# ------------------------------------------------------------------------------
+# 37. CREATE THE CROSS-PHASE SYNTHESIS
+# ------------------------------------------------------------------------------
+
+phase5_cross_phase_synthesis <- tibble(
+  evidence_stage = c(
+    "1. Feedback foundation",
+    "2. Readiness for AI-supported feedback",
+    "3. Perceived usefulness of AI feedback",
+    "4. Preferred implementation model"
+  ),
+  
+  contributing_phases = c(
+    "Phase 4A",
+    "Phases 4A and 4B",
+    "Phases 4B and 4C",
+    "Phases 4C and 4D"
+  ),
+  
+  main_evidence = c(
+    paste0(
+      "Ordinal alpha = ",
+      sprintf(
+        "%.3f",
+        phase4A_objects$ordinal_alpha
+      ),
+      "; composite mean = ",
+      sprintf(
+        "%.2f",
+        phase4A_feedback_summary$composite_mean
+      ),
+      "; maximum-score percentage = ",
+      format_percent_value(
+        phase4A_feedback_summary$
+          maximum_score_percent
+      ),
+      "."
+    ),
+    
+    paste0(
+      "Extensive prior AI experience, AI awareness, and feedback experience ",
+      "were associated with AI comfort."
+    ),
+    
+    paste0(
+      "Adjusted agreement that AI feedback could be as useful as human ",
+      "feedback increased from ",
+      scales::percent(
+        phase4C_lowest_comfort_probability,
+        accuracy = 0.1
+      ),
+      " to ",
+      scales::percent(
+        phase4C_highest_comfort_probability,
+        accuracy = 0.1
+      ),
+      " across AI-comfort levels."
+    ),
+    
+    paste0(
+      format_percent_value(
+        phase4D_universal_review_percent
+      ),
+      " preferred universal human review, while adjusted AI-forward ",
+      "preference increased from ",
+      scales::percent(
+        phase4D_ai_forward_low,
+        accuracy = 0.1
+      ),
+      " to ",
+      scales::percent(
+        phase4D_ai_forward_high,
+        accuracy = 0.1
+      ),
+      " across perceived usefulness levels."
+    )
+  ),
+  
+  integrated_interpretation = c(
+    "Respondents evaluated the existing feedback process exceptionally positively, creating a favorable but compressed foundation for considering AI-supported feedback.",
+    
+    "Comfort with AI appears connected to familiarity, transparency, and experience rather than functioning only as a fixed personal attitude.",
+    
+    "Comfort is more proximally connected to perceived AI usefulness than the general feedback-experience index.",
+    
+    "Greater perceived usefulness corresponds with more AI-forward preferences, but learners continue to place substantial value on universal human review."
+  ),
+  
+  inference_boundary = c(
+    "The scale findings describe measurement quality and response distribution; they do not establish causal effects.",
+    
+    "The Phase 4B associations do not demonstrate that awareness or feedback experience causes comfort.",
+    
+    "The sequence from comfort to usefulness is an analytic synthesis, not a tested mediation model.",
+    
+    "The preference results show associations and adjusted probabilities, not causal effects of usefulness on model choice."
+  )
+)
+
+
+# ------------------------------------------------------------------------------
+# 38. CREATE ONE LONG-FORM HEADLINE-METRICS TABLE
+# ------------------------------------------------------------------------------
+
+phase5_headline_metrics <- bind_rows(
+  phase4A_headline_metrics_verified |>
+    transmute(
+      phase = "Phase 4A",
+      domain =
+        "Feedback-experience measurement",
+      metric = result,
+      estimate = estimate,
+      statistical_evidence = NA_character_,
+      interpretation,
+      reporting_caution
+    ),
+  
+  phase4B_headline_summary |>
+    transmute(
+      phase = "Phase 4B",
+      domain = "AI comfort",
+      metric = finding,
+      estimate = NA_character_,
+      statistical_evidence = evidence,
+      interpretation,
+      reporting_caution = case_when(
+        finding == "AI awareness" ~
+          paste0(
+            "Awareness affected both location and scale; ",
+            "use adjusted probabilities for interpretation."
+          ),
+        
+        finding == "Model form" ~
+          paste0(
+            "The Hessian condition number was elevated, so large ",
+            "individual coefficients should be interpreted cautiously."
+          ),
+        
+        TRUE ~
+          NA_character_
+      )
+    ),
+  
+  phase4C_headline_summary |>
+    transmute(
+      phase = "Phase 4C",
+      domain = "Perceived AI usefulness",
+      metric = finding,
+      estimate = NA_character_,
+      statistical_evidence = evidence,
+      interpretation,
+      reporting_caution = case_when(
+        finding == "AI comfort" ~
+          paste0(
+            "Comfort affected both location and scale; adjusted ",
+            "probabilities are the primary effect-size presentation."
+          ),
+        
+        finding == "Location-scale model improvement" ~
+          paste0(
+            "The selected model had an elevated Hessian condition number."
+          ),
+        
+        TRUE ~
+          NA_character_
+      )
+    ),
+  
+  phase4D_headline_summary |>
+    transmute(
+      phase = "Phase 4D",
+      domain = "Preferred feedback model",
+      metric = finding,
+      estimate = NA_character_,
+      statistical_evidence = evidence,
+      interpretation,
+      reporting_caution = case_when(
+        finding %in% c(
+          "Perceived AI usefulness",
+          "Feedback experience"
+        ) ~
+          paste0(
+            "Interpret omnibus likelihood-ratio tests alongside ",
+            "category-specific coefficients."
+          ),
+        
+        finding ==
+          "Adjusted AI-forward preference" ~
+          paste0(
+            "The results are associational, and some predictor-by-outcome ",
+            "cells were sparse."
+          ),
+        
+        TRUE ~
+          NA_character_
+      )
+    )
+)
+
+
+# ------------------------------------------------------------------------------
+# 39. PRINT TABLES FOR VERIFICATION
+# ------------------------------------------------------------------------------
+
+inspect_report_table(
+  phase4A_headline_metrics_verified,
+  "VERIFIED PHASE 4A HEADLINE RESULTS"
+)
+
+inspect_report_table(
+  phase4B_model_fit_verified,
+  "VERIFIED PHASE 4B MODEL FIT"
+)
+
+inspect_report_table(
+  phase4B_effects_verified,
+  "VERIFIED PHASE 4B EFFECTS"
+)
+
+inspect_report_table(
+  phase4B_headline_summary,
+  "PHASE 4B HEADLINE SUMMARY"
+)
+
+inspect_report_table(
+  phase4C_model_fit_verified,
+  "VERIFIED PHASE 4C MODEL FIT"
+)
+
+inspect_report_table(
+  phase4C_effects_verified,
+  "VERIFIED PHASE 4C EFFECTS"
+)
+
+inspect_report_table(
+  phase4C_headline_summary,
+  "PHASE 4C HEADLINE SUMMARY"
+)
+
+inspect_report_table(
+  phase4D_headline_summary,
+  "PHASE 4D HEADLINE SUMMARY"
+)
+
+inspect_report_table(
+  phase5_executive_summary,
+  "PHASE 5 EXECUTIVE SUMMARY"
+)
+
+inspect_report_table(
+  phase5_cross_phase_synthesis,
+  "PHASE 5 CROSS-PHASE SYNTHESIS"
+)
+
+inspect_report_table(
+  phase5_headline_metrics,
+  "PHASE 5 INTEGRATED HEADLINE METRICS"
+)
+
+
+# ------------------------------------------------------------------------------
+# 40. SAVE THE VERIFIED INTEGRATION TABLES
+# ------------------------------------------------------------------------------
+
+saveRDS(
+  list(
+    phase4A_headline_metrics =
+      phase4A_headline_metrics_verified,
+    
+    phase4B_model_fit =
+      phase4B_model_fit_verified,
+    
+    phase4B_effects =
+      phase4B_effects_verified,
+    
+    phase4B_awareness_probabilities =
+      phase4B_awareness_probabilities_verified,
+    
+    phase4B_headline_summary =
+      phase4B_headline_summary,
+    
+    phase4C_model_fit =
+      phase4C_model_fit_verified,
+    
+    phase4C_effects =
+      phase4C_effects_verified,
+    
+    phase4C_headline_summary =
+      phase4C_headline_summary,
+    
+    phase4D_headline_summary =
+      phase4D_headline_summary,
+    
+    executive_summary =
+      phase5_executive_summary,
+    
+    cross_phase_synthesis =
+      phase5_cross_phase_synthesis,
+    
+    integrated_headline_metrics =
+      phase5_headline_metrics
+  ),
+  
+  file.path(
+    phase5_output_dir,
+    "phase5_block4_verified_integration_tables.rds"
+  )
+)
+
+
+# ------------------------------------------------------------------------------
+# 41. COMPLETION MESSAGE
+# ------------------------------------------------------------------------------
+
+cat(
+  "\n",
+  "PHASE 5 BLOCK 4 COMPLETE\n",
+  "Return the printed sections titled:\n",
+  "  1. VERIFIED PHASE 4A HEADLINE RESULTS\n",
+  "  2. VERIFIED PHASE 4B EFFECTS\n",
+  "  3. PHASE 4B HEADLINE SUMMARY\n",
+  "  4. VERIFIED PHASE 4C EFFECTS\n",
+  "  5. PHASE 4C HEADLINE SUMMARY\n",
+  "  6. PHASE 4D HEADLINE SUMMARY\n",
+  "  7. PHASE 5 EXECUTIVE SUMMARY\n",
+  "  8. PHASE 5 CROSS-PHASE SYNTHESIS\n",
+  "\n",
+  "After verification, Block 5 will create the single styled Excel workbook.\n",
+  sep = ""
+)
+
+
+# ==============================================================================
+# PHASE 5, BLOCK 5: CREATE THE INTEGRATED EXCEL WORKBOOK
+# ==============================================================================
+
+
+# ------------------------------------------------------------------------------
+# 42. LOAD EXCEL PACKAGE
+# ------------------------------------------------------------------------------
+
+
+install.packages("openxlsx")
+
+library(openxlsx)
+
+
+# ------------------------------------------------------------------------------
+# 43. DEFINE WORKBOOK OUTPUT PATH
+# ------------------------------------------------------------------------------
+
+phase5_output_dir <- here(
+  "output",
+  "learner_integrated_phase4A_4D"
+)
+
+dir.create(
+  phase5_output_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+phase5_draft_workbook_path <- file.path(
+  phase5_output_dir,
+  "learner_phase5_integrated_phase4A_4D_results_DRAFT.xlsx"
+)
+
+
+# ------------------------------------------------------------------------------
+# 44. DEFINE FIGURE PATHS
+# ------------------------------------------------------------------------------
+
+phase5_figure_manifest <- tibble(
+  phase = c(
+    "Phase 4A",
+    "Phase 4B",
+    "Phase 4C",
+    "Phase 4D"
+  ),
+  
+  figure_title = c(
+    "Feedback-Experience Reliability Diagnostics",
+    "Adjusted AI-Comfort Probability by AI Awareness",
+    "Adjusted Perceived-Usefulness Probability by AI Comfort",
+    "Adjusted Probabilities of Preferred Feedback Models"
+  ),
+  
+  figure_path = c(
+    here(
+      "output",
+      "learner_scale_diagnostics",
+      "learner_feedback_reliability_plot.png"
+    ),
+    
+    here(
+      "output",
+      "learner_ai_comfort_ordinal",
+      "final",
+      "phase4B_adjusted_probability_by_awareness.png"
+    ),
+    
+    here(
+      "output",
+      "learner_ai_usefulness_ordinal",
+      "phase4C_adjusted_usefulness_probability.png"
+    ),
+    
+    here(
+      "output",
+      "learner_preferred_model_multinomial",
+      "phase4D_adjusted_preferred_model_probabilities.png"
+    )
+  )
+) |>
+  mutate(
+    figure_exists = file.exists(
+      figure_path
+    )
+  )
+
+cat(
+  "\nFIGURE CHECK\n"
+)
+
+print(
+  phase5_figure_manifest,
+  n = Inf,
+  width = Inf
+)
+
+
+# ------------------------------------------------------------------------------
+# 45. HELPER: CONVERT OBJECTS TO EXCEL-SAFE TABLES
+# ------------------------------------------------------------------------------
+
+excel_ready <- function(
+    object
+) {
+  if (is.null(object)) {
+    return(
+      tibble(
+        note =
+          "This object was not available in the saved analysis checkpoint."
+      )
+    )
+  }
+  
+  if (is.matrix(object)) {
+    object <- as.data.frame(
+      object
+    ) |>
+      tibble::rownames_to_column(
+        var = "row"
+      )
+  }
+  
+  if (!is.data.frame(object)) {
+    object <- as.data.frame(
+      object
+    )
+  }
+  
+  object <- as_tibble(
+    object
+  )
+  
+  object <- object |>
+    mutate(
+      across(
+        where(is.factor),
+        as.character
+      ),
+      
+      across(
+        where(is.ordered),
+        as.character
+      )
+    )
+  
+  list_columns <- names(
+    object
+  )[
+    purrr::map_lgl(
+      object,
+      is.list
+    )
+  ]
+  
+  if (length(list_columns) > 0) {
+    object <- object |>
+      mutate(
+        across(
+          all_of(
+            list_columns
+          ),
+          ~ purrr::map_chr(
+            .x,
+            function(value) {
+              paste(
+                unlist(
+                  value
+                ),
+                collapse = "; "
+              )
+            }
+          )
+        )
+      )
+  }
+  
+  object
+}
+
+
+# ------------------------------------------------------------------------------
+# 46. CREATE WORKBOOK
+# ------------------------------------------------------------------------------
+
+phase5_workbook <- createWorkbook(
+  creator = "Pinyi Wang",
+  
+  title = paste0(
+    "Learner Assessment and Feedback Survey: ",
+    "Integrated Phase 4A-4D Results"
+  ),
+  
+  subject =
+    "Phase 5 quantitative integration",
+  
+  category =
+    "Learner assessment and feedback survey"
+)
+
+
+# ------------------------------------------------------------------------------
+# 47. DEFINE UF-INSPIRED WORKBOOK STYLES
+# ------------------------------------------------------------------------------
+
+uf_blue <- "#0021A5"
+uf_orange <- "#FA4616"
+
+light_blue <- "#DCE6F1"
+light_orange <- "#FCE4D6"
+light_gray <- "#F2F2F2"
+medium_gray <- "#666666"
+dark_gray <- "#333333"
+
+title_style <- createStyle(
+  fontName = "Aptos Display",
+  fontSize = 18,
+  fontColour = "#FFFFFF",
+  textDecoration = "bold",
+  fgFill = uf_blue,
+  halign = "left",
+  valign = "center"
+)
+
+subtitle_style <- createStyle(
+  fontName = "Aptos",
+  fontSize = 11,
+  fontColour = dark_gray,
+  textDecoration = "italic",
+  wrapText = TRUE,
+  valign = "center"
+)
+
+section_style <- createStyle(
+  fontName = "Aptos",
+  fontSize = 12,
+  fontColour = "#FFFFFF",
+  textDecoration = "bold",
+  fgFill = uf_orange,
+  halign = "left",
+  valign = "center"
+)
+
+body_style <- createStyle(
+  fontName = "Aptos",
+  fontSize = 10,
+  fontColour = dark_gray,
+  wrapText = TRUE,
+  valign = "top"
+)
+
+note_style <- createStyle(
+  fontName = "Aptos",
+  fontSize = 10,
+  fontColour = dark_gray,
+  fgFill = light_blue,
+  wrapText = TRUE,
+  valign = "top"
+)
+
+caution_style <- createStyle(
+  fontName = "Aptos",
+  fontSize = 10,
+  fontColour = dark_gray,
+  fgFill = light_orange,
+  wrapText = TRUE,
+  valign = "top"
+)
+
+source_style <- createStyle(
+  fontName = "Aptos",
+  fontSize = 9,
+  fontColour = medium_gray,
+  wrapText = TRUE,
+  valign = "top"
+)
+
+
+# ------------------------------------------------------------------------------
+# 48. HELPER: WRITE A TITLED SECTION
+# ------------------------------------------------------------------------------
+
+write_phase5_section <- function(
+    workbook,
+    sheet_name,
+    section_title,
+    table_object,
+    start_row,
+    table_name,
+    minimum_columns = 4,
+    body_row_height = 32
+) {
+  table_data <- excel_ready(
+    table_object
+  )
+  
+  number_of_columns <- max(
+    ncol(
+      table_data
+    ),
+    minimum_columns
+  )
+  
+  mergeCells(
+    workbook,
+    sheet_name,
+    cols = 1:number_of_columns,
+    rows = start_row
+  )
+  
+  writeData(
+    workbook,
+    sheet_name,
+    section_title,
+    startRow = start_row,
+    startCol = 1
+  )
+  
+  addStyle(
+    workbook,
+    sheet_name,
+    section_style,
+    rows = start_row,
+    cols = 1:number_of_columns,
+    gridExpand = TRUE
+  )
+  
+  setRowHeights(
+    workbook,
+    sheet_name,
+    rows = start_row,
+    heights = 23
+  )
+  
+  table_start_row <- start_row + 1
+  
+  writeDataTable(
+    workbook,
+    sheet_name,
+    table_data,
+    startRow = table_start_row,
+    startCol = 1,
+    tableName = table_name,
+    tableStyle = "TableStyleMedium2",
+    withFilter = TRUE
+  )
+  
+  if (nrow(table_data) > 0) {
+    body_start_row <- table_start_row + 1
+    body_end_row <- table_start_row + nrow(
+      table_data
+    )
+    
+    addStyle(
+      workbook,
+      sheet_name,
+      body_style,
+      rows = body_start_row:body_end_row,
+      cols = 1:ncol(
+        table_data
+      ),
+      gridExpand = TRUE,
+      stack = TRUE
+    )
+    
+    setRowHeights(
+      workbook,
+      sheet_name,
+      rows = body_start_row:body_end_row,
+      heights = body_row_height
+    )
+  }
+  
+  table_start_row +
+    nrow(
+      table_data
+    ) +
+    3
+}
+
+
+# ------------------------------------------------------------------------------
+# 49. WORKBOOK GUIDE SHEET
+# ------------------------------------------------------------------------------
+
+addWorksheet(
+  phase5_workbook,
+  "Workbook Guide",
+  gridLines = FALSE,
+  tabColour = uf_blue
+)
+
+mergeCells(
+  phase5_workbook,
+  "Workbook Guide",
+  cols = 1:5,
+  rows = 1
+)
+
+writeData(
+  phase5_workbook,
+  "Workbook Guide",
+  paste0(
+    "Learner Assessment and Feedback Survey: ",
+    "Integrated Phase 4A-4D Results"
+  ),
+  startRow = 1,
+  startCol = 1
+)
+
+addStyle(
+  phase5_workbook,
+  "Workbook Guide",
+  title_style,
+  rows = 1,
+  cols = 1:5,
+  gridExpand = TRUE
+)
+
+setRowHeights(
+  phase5_workbook,
+  "Workbook Guide",
+  rows = 1,
+  heights = 32
+)
+
+mergeCells(
+  phase5_workbook,
+  "Workbook Guide",
+  cols = 1:5,
+  rows = 2
+)
+
+writeData(
+  phase5_workbook,
+  "Workbook Guide",
+  paste0(
+    "Phase 5 integrates the finalized quantitative findings from Phases ",
+    "4A through 4D. Phase 6 is reserved for the later qualitative review, ",
+    "qualitative integration, recommendations, and final-report drafting."
+  ),
+  startRow = 2,
+  startCol = 1
+)
+
+addStyle(
+  phase5_workbook,
+  "Workbook Guide",
+  subtitle_style,
+  rows = 2,
+  cols = 1:5,
+  gridExpand = TRUE
+)
+
+phase5_workbook_guide <- tibble(
+  worksheet = c(
+    "Executive Summary",
+    "Cross-Phase Synthesis",
+    "Headline Metrics",
+    "Phase 4A Scale",
+    "Phase 4B Comfort",
+    "Phase 4C Usefulness",
+    "Phase 4D Preference",
+    "Figures",
+    "Source Manifest"
+  ),
+  
+  purpose = c(
+    "Four-row summary of the principal finding from each quantitative phase.",
+    
+    "Integrated evidence pathway connecting feedback experience, AI comfort, perceived usefulness, and preferred implementation model.",
+    
+    "Long-form inventory of the principal estimates, tests, interpretations, and cautions.",
+    
+    "Scale diagnostics, polychoric correlations, ordinal reliability, composite distribution, and measurement decision.",
+    
+    "Final AI-comfort model, effects, adjusted probabilities, and analysis decision.",
+    
+    "Final perceived-usefulness model, effects, model comparisons, and adjusted probabilities.",
+    
+    "Preferred-model distribution, human-review summary, multinomial model results, and adjusted probabilities.",
+    
+    "Four report-ready figures selected from Phases 4A-4D.",
+    
+    "Authoritative checkpoint files and figure sources used to construct this workbook."
+  ),
+  
+  reporting_status = c(
+    "Primary reporting sheet",
+    "Primary reporting sheet",
+    "Supporting reporting sheet",
+    "Technical detail",
+    "Technical detail",
+    "Technical detail",
+    "Technical detail",
+    "Visual evidence",
+    "Reproducibility record"
+  )
+)
+
+writeDataTable(
+  phase5_workbook,
+  "Workbook Guide",
+  phase5_workbook_guide,
+  startRow = 4,
+  startCol = 1,
+  tableName = "tblWorkbookGuide",
+  tableStyle = "TableStyleMedium2"
+)
+
+addStyle(
+  phase5_workbook,
+  "Workbook Guide",
+  body_style,
+  rows = 5:(
+    4 +
+      nrow(
+        phase5_workbook_guide
+      )
+  ),
+  cols = 1:3,
+  gridExpand = TRUE,
+  stack = TRUE
+)
+
+setRowHeights(
+  phase5_workbook,
+  "Workbook Guide",
+  rows = 5:(
+    4 +
+      nrow(
+        phase5_workbook_guide
+      )
+  ),
+  heights = 42
+)
+
+setColWidths(
+  phase5_workbook,
+  "Workbook Guide",
+  cols = 1:3,
+  widths = c(
+    25,
+    82,
+    28
+  )
+)
+
+freezePane(
+  phase5_workbook,
+  "Workbook Guide",
+  firstActiveRow = 5
+)
+
+
+# ------------------------------------------------------------------------------
+# 50. EXECUTIVE SUMMARY SHEET
+# ------------------------------------------------------------------------------
+
+addWorksheet(
+  phase5_workbook,
+  "Executive Summary",
+  gridLines = FALSE,
+  tabColour = uf_orange
+)
+
+mergeCells(
+  phase5_workbook,
+  "Executive Summary",
+  cols = 1:5,
+  rows = 1
+)
+
+writeData(
+  phase5_workbook,
+  "Executive Summary",
+  "Executive Summary of Quantitative Findings",
+  startRow = 1,
+  startCol = 1
+)
+
+addStyle(
+  phase5_workbook,
+  "Executive Summary",
+  title_style,
+  rows = 1,
+  cols = 1:5,
+  gridExpand = TRUE
+)
+
+mergeCells(
+  phase5_workbook,
+  "Executive Summary",
+  cols = 1:5,
+  rows = 2
+)
+
+writeData(
+  phase5_workbook,
+  "Executive Summary",
+  paste0(
+    "The findings form an analytic sequence from the quality of the existing ",
+    "feedback experience to AI comfort, perceived AI usefulness, and preferred ",
+    "feedback-model design. The sequence is interpretive and associational; ",
+    "it is not a causal or mediation model."
+  ),
+  startRow = 2,
+  startCol = 1
+)
+
+addStyle(
+  phase5_workbook,
+  "Executive Summary",
+  note_style,
+  rows = 2,
+  cols = 1:5,
+  gridExpand = TRUE
+)
+
+setRowHeights(
+  phase5_workbook,
+  "Executive Summary",
+  rows = 2,
+  heights = 42
+)
+
+writeDataTable(
+  phase5_workbook,
+  "Executive Summary",
+  excel_ready(
+    phase5_executive_summary
+  ),
+  startRow = 4,
+  startCol = 1,
+  tableName = "tblExecutiveSummary",
+  tableStyle = "TableStyleMedium2",
+  withFilter = TRUE
+)
+
+addStyle(
+  phase5_workbook,
+  "Executive Summary",
+  body_style,
+  rows = 5:(
+    4 +
+      nrow(
+        phase5_executive_summary
+      )
+  ),
+  cols = 1:5,
+  gridExpand = TRUE,
+  stack = TRUE
+)
+
+setRowHeights(
+  phase5_workbook,
+  "Executive Summary",
+  rows = 5:(
+    4 +
+      nrow(
+        phase5_executive_summary
+      )
+  ),
+  heights = 86
+)
+
+setColWidths(
+  phase5_workbook,
+  "Executive Summary",
+  cols = 1:5,
+  widths = c(
+    13,
+    31,
+    72,
+    66,
+    66
+  )
+)
+
+freezePane(
+  phase5_workbook,
+  "Executive Summary",
+  firstActiveRow = 5
+)
+
+
+# ------------------------------------------------------------------------------
+# 51. CROSS-PHASE SYNTHESIS SHEET
+# ------------------------------------------------------------------------------
+
+addWorksheet(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  gridLines = FALSE,
+  tabColour = uf_blue
+)
+
+mergeCells(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  cols = 1:5,
+  rows = 1
+)
+
+writeData(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  "Cross-Phase Evidence Pathway",
+  startRow = 1,
+  startCol = 1
+)
+
+addStyle(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  title_style,
+  rows = 1,
+  cols = 1:5,
+  gridExpand = TRUE
+)
+
+mergeCells(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  cols = 1:5,
+  rows = 2
+)
+
+writeData(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  paste0(
+    "Feedback foundation  →  AI readiness and comfort  →  ",
+    "perceived AI usefulness  →  preferred implementation model"
+  ),
+  startRow = 2,
+  startCol = 1
+)
+
+addStyle(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  note_style,
+  rows = 2,
+  cols = 1:5,
+  gridExpand = TRUE
+)
+
+writeDataTable(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  excel_ready(
+    phase5_cross_phase_synthesis
+  ),
+  startRow = 4,
+  startCol = 1,
+  tableName = "tblCrossPhaseSynthesis",
+  tableStyle = "TableStyleMedium2",
+  withFilter = TRUE
+)
+
+addStyle(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  body_style,
+  rows = 5:(
+    4 +
+      nrow(
+        phase5_cross_phase_synthesis
+      )
+  ),
+  cols = 1:5,
+  gridExpand = TRUE,
+  stack = TRUE
+)
+
+setRowHeights(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  rows = 5:(
+    4 +
+      nrow(
+        phase5_cross_phase_synthesis
+      )
+  ),
+  heights = 90
+)
+
+setColWidths(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  cols = 1:5,
+  widths = c(
+    38,
+    24,
+    65,
+    67,
+    61
+  )
+)
+
+freezePane(
+  phase5_workbook,
+  "Cross-Phase Synthesis",
+  firstActiveRow = 5
+)
+
+
+# ------------------------------------------------------------------------------
+# 52. HEADLINE METRICS SHEET
+# ------------------------------------------------------------------------------
+
+addWorksheet(
+  phase5_workbook,
+  "Headline Metrics",
+  gridLines = FALSE,
+  tabColour = uf_orange
+)
+
+mergeCells(
+  phase5_workbook,
+  "Headline Metrics",
+  cols = 1:7,
+  rows = 1
+)
+
+writeData(
+  phase5_workbook,
+  "Headline Metrics",
+  "Integrated Headline Metrics and Interpretive Notes",
+  startRow = 1,
+  startCol = 1
+)
+
+addStyle(
+  phase5_workbook,
+  "Headline Metrics",
+  title_style,
+  rows = 1,
+  cols = 1:7,
+  gridExpand = TRUE
+)
+
+writeDataTable(
+  phase5_workbook,
+  "Headline Metrics",
+  excel_ready(
+    phase5_headline_metrics
+  ),
+  startRow = 3,
+  startCol = 1,
+  tableName = "tblHeadlineMetrics",
+  tableStyle = "TableStyleMedium2",
+  withFilter = TRUE
+)
+
+addStyle(
+  phase5_workbook,
+  "Headline Metrics",
+  body_style,
+  rows = 4:(
+    3 +
+      nrow(
+        phase5_headline_metrics
+      )
+  ),
+  cols = 1:7,
+  gridExpand = TRUE,
+  stack = TRUE
+)
+
+setRowHeights(
+  phase5_workbook,
+  "Headline Metrics",
+  rows = 4:(
+    3 +
+      nrow(
+        phase5_headline_metrics
+      )
+  ),
+  heights = 55
+)
+
+setColWidths(
+  phase5_workbook,
+  "Headline Metrics",
+  cols = 1:7,
+  widths = c(
+    13,
+    32,
+    43,
+    25,
+    66,
+    66,
+    58
+  )
+)
+
+freezePane(
+  phase5_workbook,
+  "Headline Metrics",
+  firstActiveRow = 4
+)
+
+
+# ------------------------------------------------------------------------------
+# 53. PHASE 4A DETAIL SHEET
+# ------------------------------------------------------------------------------
+
+addWorksheet(
+  phase5_workbook,
+  "Phase 4A Scale",
+  gridLines = FALSE,
+  tabColour = uf_blue
+)
+
+phase4A_excel_row <- 1
+
+phase4A_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4A Scale",
+  "Verified Phase 4A Headline Results",
+  phase4A_headline_metrics_verified,
+  phase4A_excel_row,
+  "tblPhase4AHeadline",
+  body_row_height = 44
+)
+
+phase4A_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4A Scale",
+  "Polychoric Correlation Matrix",
+  phase4A_polychoric_matrix,
+  phase4A_excel_row,
+  "tblPhase4APolychoric"
+)
+
+phase4A_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4A Scale",
+  "Ordinal Item Diagnostics",
+  phase4A_objects$ordinal_item_diagnostics,
+  phase4A_excel_row,
+  "tblPhase4AOrdinalItems"
+)
+
+phase4A_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4A Scale",
+  "Observed Reliability Summary",
+  phase4A_objects$observed_alpha_summary,
+  phase4A_excel_row,
+  "tblPhase4AObservedReliability"
+)
+
+phase4A_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4A Scale",
+  "Composite Summary",
+  phase4A_objects$composite_summary,
+  phase4A_excel_row,
+  "tblPhase4AComposite"
+)
+
+phase4A_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4A Scale",
+  "Measurement Decision",
+  phase4A_objects$measurement_decision,
+  phase4A_excel_row,
+  "tblPhase4ADecision",
+  body_row_height = 30
+)
+
+setColWidths(
+  phase5_workbook,
+  "Phase 4A Scale",
+  cols = 1:10,
+  widths = c(
+    42,
+    24,
+    28,
+    28,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24
+  )
+)
+
+freezePane(
+  phase5_workbook,
+  "Phase 4A Scale",
+  firstActiveRow = 2
+)
+
+
+# ------------------------------------------------------------------------------
+# 54. PHASE 4B DETAIL SHEET
+# ------------------------------------------------------------------------------
+
+addWorksheet(
+  phase5_workbook,
+  "Phase 4B Comfort",
+  gridLines = FALSE,
+  tabColour = uf_orange
+)
+
+phase4B_excel_row <- 1
+
+phase4B_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4B Comfort",
+  "Phase 4B Headline Summary",
+  phase4B_headline_summary,
+  phase4B_excel_row,
+  "tblPhase4BHeadline",
+  body_row_height = 50
+)
+
+phase4B_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4B Comfort",
+  "Final Model Fit",
+  phase4B_model_fit_verified,
+  phase4B_excel_row,
+  "tblPhase4BModelFit"
+)
+
+phase4B_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4B Comfort",
+  "Verified Model Effects",
+  phase4B_effects_verified,
+  phase4B_excel_row,
+  "tblPhase4BEffects"
+)
+
+phase4B_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4B Comfort",
+  "Adjusted Comfort Probabilities by AI Awareness",
+  phase4B_objects$adjusted_probability_by_awareness,
+  phase4B_excel_row,
+  "tblPhase4BAwarenessProb"
+)
+
+phase4B_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4B Comfort",
+  paste0(
+    "Adjusted Comfort Probabilities by Feedback Experience ",
+    "and AI Awareness"
+  ),
+  phase4B_objects$
+    adjusted_probability_by_feedback_and_awareness,
+  phase4B_excel_row,
+  "tblPhase4BFeedbackProb"
+)
+
+phase4B_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4B Comfort",
+  "Final Analysis Decision",
+  phase4B_objects$final_analysis_decision,
+  phase4B_excel_row,
+  "tblPhase4BDecision",
+  body_row_height = 30
+)
+
+setColWidths(
+  phase5_workbook,
+  "Phase 4B Comfort",
+  cols = 1:11,
+  widths = c(
+    48,
+    32,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22
+  )
+)
+
+freezePane(
+  phase5_workbook,
+  "Phase 4B Comfort",
+  firstActiveRow = 2
+)
+
+
+# ------------------------------------------------------------------------------
+# 55. PHASE 4C DETAIL SHEET
+# ------------------------------------------------------------------------------
+
+addWorksheet(
+  phase5_workbook,
+  "Phase 4C Usefulness",
+  gridLines = FALSE,
+  tabColour = uf_blue
+)
+
+phase4C_excel_row <- 1
+
+phase4C_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4C Usefulness",
+  "Phase 4C Headline Summary",
+  phase4C_headline_summary,
+  phase4C_excel_row,
+  "tblPhase4CHeadline",
+  body_row_height = 50
+)
+
+phase4C_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4C Usefulness",
+  "Observed Outcome Distribution",
+  phase4C_objects$outcome_distribution,
+  phase4C_excel_row,
+  "tblPhase4CDistribution"
+)
+
+phase4C_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4C Usefulness",
+  "Final Model Fit",
+  phase4C_model_fit_verified,
+  phase4C_excel_row,
+  "tblPhase4CModelFit"
+)
+
+phase4C_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4C Usefulness",
+  "Verified AI-Comfort Effects",
+  phase4C_effects_verified,
+  phase4C_excel_row,
+  "tblPhase4CEffects"
+)
+
+phase4C_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4C Usefulness",
+  "Adjusted Agreement Probabilities by AI Comfort",
+  phase4C_objects$predicted_probabilities,
+  phase4C_excel_row,
+  "tblPhase4CPredictedProb"
+)
+
+phase4C_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4C Usefulness",
+  "Proportional-Odds Versus Location-Scale Comparison",
+  phase4C_objects$proportional_vs_scale_comparison,
+  phase4C_excel_row,
+  "tblPhase4CLocationScale"
+)
+
+phase4C_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4C Usefulness",
+  "Feedback-Experience Addition Comparison",
+  phase4C_objects$feedback_addition_comparison,
+  phase4C_excel_row,
+  "tblPhase4CFeedbackAdd"
+)
+
+setColWidths(
+  phase5_workbook,
+  "Phase 4C Usefulness",
+  cols = 1:11,
+  widths = c(
+    45,
+    33,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22
+  )
+)
+
+freezePane(
+  phase5_workbook,
+  "Phase 4C Usefulness",
+  firstActiveRow = 2
+)
+
+
+# ------------------------------------------------------------------------------
+# 56. PHASE 4D DETAIL SHEET
+# ------------------------------------------------------------------------------
+
+addWorksheet(
+  phase5_workbook,
+  "Phase 4D Preference",
+  gridLines = FALSE,
+  tabColour = uf_orange
+)
+
+phase4D_excel_row <- 1
+
+phase4D_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4D Preference",
+  "Phase 4D Headline Summary",
+  phase4D_headline_summary,
+  phase4D_excel_row,
+  "tblPhase4DHeadline",
+  body_row_height = 50
+)
+
+phase4D_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4D Preference",
+  "Preferred-Model Distribution",
+  phase4D_objects$preferred_model_distribution,
+  phase4D_excel_row,
+  "tblPhase4DDistribution"
+)
+
+phase4D_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4D Preference",
+  "Human-Review Summary",
+  phase4D_objects$human_review_summary,
+  phase4D_excel_row,
+  "tblPhase4DHumanReview"
+)
+
+phase4D_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4D Preference",
+  "Final Model Fit",
+  phase4D_model_fit,
+  phase4D_excel_row,
+  "tblPhase4DModelFit"
+)
+
+phase4D_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4D Preference",
+  "Final Model Selection",
+  phase4D_objects$final_model_selection,
+  phase4D_excel_row,
+  "tblPhase4DSelection"
+)
+
+phase4D_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4D Preference",
+  "Report-Ready Multinomial Coefficients",
+  phase4D_report_ready_coefficients,
+  phase4D_excel_row,
+  "tblPhase4DCoefficients"
+)
+
+phase4D_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4D Preference",
+  "Reduced-Model Likelihood-Ratio Comparisons",
+  phase4D_objects$reduced_model_comparisons,
+  phase4D_excel_row,
+  "tblPhase4DReducedTests"
+)
+
+phase4D_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4D Preference",
+  "Grouped Adjusted Probabilities",
+  phase4D_objects$grouped_probabilities,
+  phase4D_excel_row,
+  "tblPhase4DGroupedProb"
+)
+
+phase4D_excel_row <- write_phase5_section(
+  phase5_workbook,
+  "Phase 4D Preference",
+  "Maximum-Likelihood Versus Bias-Reduced Estimates",
+  phase4D_objects$estimator_comparison,
+  phase4D_excel_row,
+  "tblPhase4DEstimatorComparison"
+)
+
+setColWidths(
+  phase5_workbook,
+  "Phase 4D Preference",
+  cols = 1:12,
+  widths = c(
+    52,
+    40,
+    38,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24,
+    24
+  )
+)
+
+freezePane(
+  phase5_workbook,
+  "Phase 4D Preference",
+  firstActiveRow = 2
+)
+
+
+# ------------------------------------------------------------------------------
+# 57. FIGURES SHEET
+# ------------------------------------------------------------------------------
+
+addWorksheet(
+  phase5_workbook,
+  "Figures",
+  gridLines = FALSE,
+  tabColour = uf_blue
+)
+
+mergeCells(
+  phase5_workbook,
+  "Figures",
+  cols = 1:10,
+  rows = 1
+)
+
+writeData(
+  phase5_workbook,
+  "Figures",
+  "Report-Ready Figures from Phases 4A-4D",
+  startRow = 1,
+  startCol = 1
+)
+
+addStyle(
+  phase5_workbook,
+  "Figures",
+  title_style,
+  rows = 1,
+  cols = 1:10,
+  gridExpand = TRUE
+)
+
+figure_title_rows <- c(
+  3,
+  35,
+  67,
+  99
+)
+
+figure_image_rows <- figure_title_rows + 1
+
+for (
+  figure_index in seq_len(
+    nrow(
+      phase5_figure_manifest
+    )
+  )
+) {
+  mergeCells(
+    phase5_workbook,
+    "Figures",
+    cols = 1:10,
+    rows = figure_title_rows[
+      figure_index
+    ]
+  )
+  
+  writeData(
+    phase5_workbook,
+    "Figures",
+    paste0(
+      phase5_figure_manifest$phase[
+        figure_index
+      ],
+      ": ",
+      phase5_figure_manifest$figure_title[
+        figure_index
+      ]
+    ),
+    startRow =
+      figure_title_rows[
+        figure_index
+      ],
+    startCol = 1
+  )
+  
+  addStyle(
+    phase5_workbook,
+    "Figures",
+    section_style,
+    rows =
+      figure_title_rows[
+        figure_index
+      ],
+    cols = 1:10,
+    gridExpand = TRUE
+  )
+  
+  if (
+    phase5_figure_manifest$figure_exists[
+      figure_index
+    ]
+  ) {
+    insertImage(
+      phase5_workbook,
+      "Figures",
+      phase5_figure_manifest$figure_path[
+        figure_index
+      ],
+      startRow =
+        figure_image_rows[
+          figure_index
+        ],
+      startCol = 1,
+      width = 12,
+      height = 7.4,
+      units = "in",
+      dpi = 300
+    )
+  } else {
+    writeData(
+      phase5_workbook,
+      "Figures",
+      paste0(
+        "Figure file not found: ",
+        phase5_figure_manifest$figure_path[
+          figure_index
+        ]
+      ),
+      startRow =
+        figure_image_rows[
+          figure_index
+        ],
+      startCol = 1
+    )
+    
+    addStyle(
+      phase5_workbook,
+      "Figures",
+      caution_style,
+      rows =
+        figure_image_rows[
+          figure_index
+        ],
+      cols = 1:10,
+      gridExpand = TRUE
+    )
+  }
+}
+
+setColWidths(
+  phase5_workbook,
+  "Figures",
+  cols = 1:10,
+  widths = 14
+)
+
+
+# ------------------------------------------------------------------------------
+# 58. SOURCE MANIFEST SHEET
+# ------------------------------------------------------------------------------
+
+phase5_source_manifest <- bind_rows(
+  phase5_source_paths |>
+    transmute(
+      phase_or_resource =
+        source_name,
+      
+      resource_type =
+        "RDS analysis source",
+      
+      file_path =
+        source_path,
+      
+      file_exists =
+        file_exists,
+      
+      file_size_kb =
+        round(
+          file_size_kb,
+          2
+        )
+    ),
+  
+  phase5_figure_manifest |>
+    transmute(
+      phase_or_resource =
+        paste0(
+          phase,
+          ": ",
+          figure_title
+        ),
+      
+      resource_type =
+        "PNG figure",
+      
+      file_path =
+        figure_path,
+      
+      file_exists =
+        figure_exists,
+      
+      file_size_kb =
+        if_else(
+          figure_exists,
+          round(
+            file.info(
+              figure_path
+            )$size / 1024,
+            2
+          ),
+          NA_real_
+        )
+    )
+)
+
+addWorksheet(
+  phase5_workbook,
+  "Source Manifest",
+  gridLines = FALSE,
+  tabColour = uf_orange
+)
+
+mergeCells(
+  phase5_workbook,
+  "Source Manifest",
+  cols = 1:5,
+  rows = 1
+)
+
+writeData(
+  phase5_workbook,
+  "Source Manifest",
+  "Authoritative Analysis Sources",
+  startRow = 1,
+  startCol = 1
+)
+
+addStyle(
+  phase5_workbook,
+  "Source Manifest",
+  title_style,
+  rows = 1,
+  cols = 1:5,
+  gridExpand = TRUE
+)
+
+writeDataTable(
+  phase5_workbook,
+  "Source Manifest",
+  phase5_source_manifest,
+  startRow = 3,
+  startCol = 1,
+  tableName = "tblSourceManifest",
+  tableStyle = "TableStyleMedium2",
+  withFilter = TRUE
+)
+
+addStyle(
+  phase5_workbook,
+  "Source Manifest",
+  source_style,
+  rows = 4:(
+    3 +
+      nrow(
+        phase5_source_manifest
+      )
+  ),
+  cols = 1:5,
+  gridExpand = TRUE,
+  stack = TRUE
+)
+
+setRowHeights(
+  phase5_workbook,
+  "Source Manifest",
+  rows = 4:(
+    3 +
+      nrow(
+        phase5_source_manifest
+      )
+  ),
+  heights = 34
+)
+
+setColWidths(
+  phase5_workbook,
+  "Source Manifest",
+  cols = 1:5,
+  widths = c(
+    48,
+    24,
+    105,
+    14,
+    16
+  )
+)
+
+freezePane(
+  phase5_workbook,
+  "Source Manifest",
+  firstActiveRow = 4
+)
+
+
+# ------------------------------------------------------------------------------
+# 59. DEFINE WORKBOOK SHEET ORDER
+# ------------------------------------------------------------------------------
+
+desired_sheet_order <- c(
+  "Workbook Guide",
+  "Executive Summary",
+  "Cross-Phase Synthesis",
+  "Headline Metrics",
+  "Phase 4A Scale",
+  "Phase 4B Comfort",
+  "Phase 4C Usefulness",
+  "Phase 4D Preference",
+  "Figures",
+  "Source Manifest"
+)
+
+worksheetOrder(
+  phase5_workbook
+) <- match(
+  desired_sheet_order,
+  names(
+    phase5_workbook
+  )
+)
+
+
+# ------------------------------------------------------------------------------
+# 60. SAVE DRAFT WORKBOOK
+# ------------------------------------------------------------------------------
+
+saveWorkbook(
+  phase5_workbook,
+  phase5_draft_workbook_path,
+  overwrite = TRUE
+)
+
+if (
+  !file.exists(
+    phase5_draft_workbook_path
+  )
+) {
+  stop(
+    "The Phase 5 draft workbook was not created successfully."
+  )
+}
+
+
+# ------------------------------------------------------------------------------
+# 61. VERIFY SAVED WORKBOOK
+# ------------------------------------------------------------------------------
+
+phase5_saved_workbook <- loadWorkbook(
+  phase5_draft_workbook_path
+)
+
+phase5_workbook_sheet_check <- tibble(
+  sheet_number = seq_along(
+    names(
+      phase5_saved_workbook
+    )
+  ),
+  
+  sheet_name = names(
+    phase5_saved_workbook
+  )
+)
+
+cat(
+  "\nWORKBOOK SHEET CHECK\n"
+)
+
+print(
+  phase5_workbook_sheet_check,
+  n = Inf,
+  width = Inf
+)
+
+cat(
+  "\nDRAFT WORKBOOK CREATED\n",
+  "File: ",
+  phase5_draft_workbook_path,
+  "\n",
+  "File size: ",
+  round(
+    file.info(
+      phase5_draft_workbook_path
+    )$size / 1024 / 1024,
+    2
+  ),
+  " MB\n",
+  sep = ""
+)
+
+

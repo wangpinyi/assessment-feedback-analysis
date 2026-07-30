@@ -112,9 +112,9 @@ if (length(existing_input_paths) == 0) {
 input_path <- existing_input_paths[[1]]
 
 processed_dir <- here("data_processed")
-table_dir <- here("outputs", "instructor", "tables")
-figure_dir <- here("outputs", "instructor", "figures")
-coding_dir <- here("outputs", "instructor", "qualitative")
+table_dir <- here("output", "instructor", "tables")
+figure_dir <- here("output", "instructor", "figures")
+coding_dir <- here("output", "instructor", "qualitative")
 
 walk(
   c(
@@ -1045,6 +1045,7 @@ write.xlsx(
   overwrite = TRUE
 )
 
+print(descriptive_tables)
 
 # ------------------------------------------------------------------------------
 # 11. DESCRIPTIVE FIGURE FUNCTION
@@ -1131,6 +1132,7 @@ make_bar_plot <- function(
     ) +
     theme_instructor()
 }
+
 
 
 # ------------------------------------------------------------------------------
@@ -1907,55 +1909,95 @@ spearman_results <- pmap_dfr(
 
 
 # ------------------------------------------------------------------------------
-# 15. FISHER EXACT TESTS FOR COLLAPSED 2 x 2 TABLES
+# DIRECTIONALLY STANDARDIZED FISHER EXACT TESTS
+#
+# OR > 1 means higher odds of recommending continuation in the positive group
+# relative to the reference group.
 # ------------------------------------------------------------------------------
 
-fisher_specs <- tribble(
-  ~predictor, ~predictor_label,
+fisher_specs_directional <- tribble(
+  ~predictor,
+  ~predictor_label,
+  ~positive_level,
+  ~reference_level,
+  
   "time_saving_binary",
   "Perceived time saving",
+  "Saved time",
+  "No saving or added time",
+  
   "workflow_fit_positive",
   "Positive workflow fit",
+  "Agree",
+  "Neutral/disagree",
+  
   "trust_positive",
   "Positive trust",
+  "Agree",
+  "Neutral/disagree",
+  
   "model_appropriate_positive",
-  "Positive assessment of current model"
+  "Positive assessment of current model",
+  "Agree",
+  "Neutral/disagree"
 )
 
-run_fisher_2x2 <- function(
+
+run_directional_fisher <- function(
     data,
     predictor,
-    predictor_label
+    predictor_label,
+    positive_level,
+    reference_level
 ) {
-
+  
   analysis_complete <- data |>
-    select(
-      continuation_support_label,
-      all_of(
-        predictor
+    transmute(
+      predictor_group = factor(
+        .data[[predictor]],
+        levels = c(
+          positive_level,
+          reference_level
+        ),
+        labels = c(
+          "Positive",
+          "Reference"
+        )
+      ),
+      
+      continuation_group = factor(
+        support_continuation,
+        levels = c(
+          1,
+          0
+        ),
+        labels = c(
+          "Continue",
+          "Discontinue"
+        )
       )
     ) |>
     drop_na()
-
+  
   contingency_table <- table(
-    analysis_complete$continuation_support_label,
-    analysis_complete[[predictor]]
+    analysis_complete$predictor_group,
+    analysis_complete$continuation_group
   )
-
+  
   if (
     !all(
-      dim(
-        contingency_table
-      ) == c(2, 2)
+      dim(contingency_table) == c(2, 2)
     )
   ) {
     return(
       tibble(
         predictor = predictor,
         predictor_label = predictor_label,
-        analytic_n = nrow(
-          analysis_complete
-        ),
+        analytic_n = nrow(analysis_complete),
+        positive_continue_n = NA_integer_,
+        positive_discontinue_n = NA_integer_,
+        reference_continue_n = NA_integer_,
+        reference_discontinue_n = NA_integer_,
         odds_ratio = NA_real_,
         confidence_low = NA_real_,
         confidence_high = NA_real_,
@@ -1964,34 +2006,84 @@ run_fisher_2x2 <- function(
       )
     )
   }
-
+  
   test_result <- fisher.test(
     contingency_table
   )
-
+  
   tibble(
     predictor = predictor,
     predictor_label = predictor_label,
     analytic_n = nrow(
       analysis_complete
     ),
+    
+    positive_continue_n =
+      unname(
+        contingency_table[
+          "Positive",
+          "Continue"
+        ]
+      ),
+    
+    positive_discontinue_n =
+      unname(
+        contingency_table[
+          "Positive",
+          "Discontinue"
+        ]
+      ),
+    
+    reference_continue_n =
+      unname(
+        contingency_table[
+          "Reference",
+          "Continue"
+        ]
+      ),
+    
+    reference_discontinue_n =
+      unname(
+        contingency_table[
+          "Reference",
+          "Discontinue"
+        ]
+      ),
+    
     odds_ratio = unname(
       test_result$estimate
     ),
-    confidence_low = test_result$conf.int[1],
-    confidence_high = test_result$conf.int[2],
-    p_value = test_result$p.value,
-    note = NA_character_
+    
+    confidence_low =
+      test_result$conf.int[1],
+    
+    confidence_high =
+      test_result$conf.int[2],
+    
+    p_value =
+      test_result$p.value,
+    
+    note = paste0(
+      "OR > 1 indicates higher odds of continuation ",
+      "in the positive group."
+    )
   )
 }
 
-fisher_results <- pmap_dfr(
-  fisher_specs,
-  \(predictor, predictor_label) {
-    run_fisher_2x2(
+
+fisher_results_directional <- pmap_dfr(
+  fisher_specs_directional,
+  \(predictor,
+    predictor_label,
+    positive_level,
+    reference_level) {
+    
+    run_directional_fisher(
       instructor_analysis,
       predictor,
-      predictor_label
+      predictor_label,
+      positive_level,
+      reference_level
     )
   }
 ) |>
@@ -2000,7 +2092,16 @@ fisher_results <- pmap_dfr(
       p_value,
       method = "BH"
     )
+  ) |>
+  arrange(
+    p_value
   )
+
+print(
+  fisher_results_directional,
+  n = Inf,
+  width = Inf
+)
 
 
 # ==============================================================================
@@ -2019,24 +2120,33 @@ fisher_results <- pmap_dfr(
 
 continuation_predictors <- tribble(
   ~predictor, ~predictor_label,
+  
   "time_impact_score",
   "Perceived time impact (one-category increase)",
+  
   "workflow_fit_score",
   "Workflow fit (one-category increase)",
+  
   "score_trust_score",
   "Trust in AI scores (one-category increase)",
+  
   "current_model_appropriate_score",
   "Current model appropriateness (one-category increase)",
-  "ai_evaluation_index",
-  "AI evaluation index (0-1 increase)"
+  
+  "ai_evaluation_index_10",
+  "AI evaluation index (0.10-unit increase)"
 )
+
+# ------------------------------------------------------------------------------
+# REVISED BIAS-REDUCED LOGISTIC MODEL FUNCTION
+# ------------------------------------------------------------------------------
 
 fit_bias_reduced_model <- function(
     data,
     predictor,
     predictor_label
 ) {
-
+  
   model_data <- data |>
     select(
       support_continuation,
@@ -2045,12 +2155,12 @@ fit_bias_reduced_model <- function(
       )
     ) |>
     drop_na()
-
+  
   model_formula <- reformulate(
     predictor,
     response = "support_continuation"
   )
-
+  
   fitted_model <- glm(
     formula = model_formula,
     data = model_data,
@@ -2060,37 +2170,132 @@ fit_bias_reduced_model <- function(
     method = brglm2::brglmFit,
     type = "AS_mean"
   )
-
-  model_terms <- broom::tidy(
-    fitted_model,
-    conf.int = TRUE,
-    exponentiate = TRUE
-  ) |>
-    filter(
-      term != "(Intercept)"
-    )
-
-  model_fit <- broom::glance(
+  
+  coefficient_table <- summary(
     fitted_model
+  )$coefficients
+  
+  predictor_row <- coefficient_table[
+    predictor,
+    ,
+    drop = FALSE
+  ]
+  
+  log_odds_estimate <- predictor_row[
+    1,
+    "Estimate"
+  ]
+  
+  standard_error <- predictor_row[
+    1,
+    "Std. Error"
+  ]
+  
+  z_value <- predictor_row[
+    1,
+    "z value"
+  ]
+  
+  p_value <- predictor_row[
+    1,
+    "Pr(>|z|)"
+  ]
+  
+  critical_value <- qnorm(
+    0.975
   )
-
-  model_terms |>
-    transmute(
-      predictor = predictor,
-      predictor_label = predictor_label,
-      analytic_n = nrow(
-        model_data
-      ),
-      odds_ratio = estimate,
-      standard_error_log_odds = std.error,
-      confidence_low = conf.low,
-      confidence_high = conf.high,
-      p_value = p.value,
-      aic = model_fit$AIC,
-      converged = fitted_model$converged
-    )
+  
+  confidence_low_log_odds <-
+    log_odds_estimate -
+    critical_value * standard_error
+  
+  confidence_high_log_odds <-
+    log_odds_estimate +
+    critical_value * standard_error
+  
+  tibble(
+    predictor = predictor,
+    predictor_label = predictor_label,
+    analytic_n = nrow(
+      model_data
+    ),
+    
+    log_odds = log_odds_estimate,
+    
+    standard_error_log_odds =
+      standard_error,
+    
+    z_value = z_value,
+    
+    odds_ratio = exp(
+      log_odds_estimate
+    ),
+    
+    confidence_low = exp(
+      confidence_low_log_odds
+    ),
+    
+    confidence_high = exp(
+      confidence_high_log_odds
+    ),
+    
+    p_value = p_value,
+    
+    log_likelihood = as.numeric(
+      logLik(
+        fitted_model
+      )
+    ),
+    
+    aic = AIC(
+      fitted_model
+    ),
+    
+    converged = fitted_model$converged
+  )
 }
 
+# ------------------------------------------------------------------------------
+# RESCALE AI EVALUATION INDEX FOR INTERPRETATION
+# ------------------------------------------------------------------------------
+
+instructor_analysis <- instructor_analysis |>
+  mutate(
+    ai_evaluation_index_10 =
+      ai_evaluation_index * 10
+  )
+
+stopifnot(
+  "ai_evaluation_index_10" %in%
+    names(instructor_analysis)
+)
+
+instructor_analysis |>
+  summarise(
+    analytic_n = sum(
+      !is.na(ai_evaluation_index_10)
+    ),
+    minimum = min(
+      ai_evaluation_index_10,
+      na.rm = TRUE
+    ),
+    maximum = max(
+      ai_evaluation_index_10,
+      na.rm = TRUE
+    ),
+    mean = mean(
+      ai_evaluation_index_10,
+      na.rm = TRUE
+    ),
+    standard_deviation = sd(
+      ai_evaluation_index_10,
+      na.rm = TRUE
+    )
+  ) |>
+  print()
+
+
+### Continuation model results
 continuation_model_results <- pmap_dfr(
   continuation_predictors,
   \(predictor, predictor_label) {
@@ -2108,36 +2313,130 @@ continuation_model_results <- pmap_dfr(
     )
   )
 
+print(
+  continuation_model_results,
+  n = Inf,
+  width = Inf
+)
 
-# ------------------------------------------------------------------------------
-# 16. EXPORT PHASE 4B-4C RESULTS
-# ------------------------------------------------------------------------------
+### Print the complete 4B results
+print(
+  spearman_results |>
+    arrange(
+      p_value
+    ),
+  n = Inf,
+  width = Inf
+)
 
-write.xlsx(
-  x = list(
-    Spearman_Associations = spearman_results,
-    Fisher_Exact_Tests = fisher_results,
-    Bias_Reduced_Logistic =
-      continuation_model_results
-  ),
-  file = file.path(
-    table_dir,
-    "instructor_phase4_association_results.xlsx"
-  ),
-  overwrite = TRUE
+print(
+  fisher_results |>
+    arrange(
+      p_value
+    ),
+  n = Inf,
+  width = Inf
 )
 
 
-# ==============================================================================
-# PHASE 4D: PREFERRED OVERSIGHT MODEL
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# FINAL PHASE 4B OPERATIONAL ASSOCIATION FAMILY
+# ------------------------------------------------------------------------------
 
-# The preferred model is best treated descriptively because:
-#   - there are four grouped categories,
-#   - several cells are small,
-#   - "No strong preference" is not ordinal.
-#
-# Report distributions and cross-tabulations. Avoid multinomial regression.
+phase4B_operational_results <- spearman_results |>
+  filter(
+    interpretation %in% c(
+      "Review time versus perceived time saving",
+      "Time saving versus workflow fit",
+      "Time saving versus trust",
+      "Time saving versus model appropriateness",
+      "Workflow fit versus trust",
+      "Trust versus model appropriateness",
+      "Model appropriateness versus preferred human oversight"
+    )
+  ) |>
+  mutate(
+    p_value_bh = p.adjust(
+      p_value,
+      method = "BH"
+    )
+  ) |>
+  arrange(
+    p_value
+  )
+
+print(
+  phase4B_operational_results,
+  n = Inf,
+  width = Inf
+)
+
+
+# ------------------------------------------------------------------------------
+# FINAL PHASE 4B-4C EXPORT
+# ------------------------------------------------------------------------------
+
+phase4BC_method_notes <- tibble(
+  analysis = c(
+    "Phase 4B Spearman associations",
+    "Phase 4B Fisher exact tests",
+    "Phase 4C continuation models",
+    "AI evaluation index"
+  ),
+  
+  note = c(
+    paste0(
+      "Benjamini-Hochberg adjustment was applied across the seven ",
+      "operational Phase 4B associations. Evaluation-item correlations ",
+      "were analyzed separately in Phase 4A."
+    ),
+    
+    paste0(
+      "Fisher tests used dichotomized predictors and were treated as ",
+      "sensitivity analyses. Odds ratios greater than 1 indicate higher ",
+      "odds of continuation in the favorable predictor group."
+    ),
+    
+    paste0(
+      "Separate mean bias-reduced logistic regressions were fitted because ",
+      "only eight instructors recommended discontinuation. No multivariable ",
+      "continuation model was estimated."
+    ),
+    
+    paste0(
+      "The AI evaluation index was retained only as an exploratory ",
+      "sensitivity predictor because its four indicators demonstrated ",
+      "modest internal consistency."
+    )
+  )
+)
+
+write.xlsx(
+  x = list(
+    Phase4B_Spearman =
+      phase4B_operational_results,
+    
+    Phase4B_Fisher_Sensitivity =
+      fisher_results_directional,
+    
+    Phase4C_Bias_Reduced_Models =
+      continuation_model_results,
+    
+    Method_Notes =
+      phase4BC_method_notes
+  ),
+  
+  file = file.path(
+    table_dir,
+    "instructor_phase4B_4C_results.xlsx"
+  ),
+  
+  overwrite = TRUE
+)
+
+# ------------------------------------------------------------------------------
+# PHASE 4D: PREFERRED MODEL BY CONTINUATION RECOMMENDATION
+# ------------------------------------------------------------------------------
 
 preferred_by_continuation <- instructor_analysis |>
   count(
@@ -2150,24 +2449,43 @@ preferred_by_continuation <- instructor_analysis |>
     continuation_recommendation
   ) |>
   mutate(
-    row_percent = if_else(
-      sum(n) > 0,
-      100 * n / sum(n),
-      NA_real_
-    )
+    group_n = sum(n),
+    row_percent = 100 * n / group_n
   ) |>
   ungroup()
+
+print(
+  preferred_by_continuation,
+  n = Inf,
+  width = Inf
+)
+
+# ------------------------------------------------------------------------------
+# PHASE 4D: PREFERRED MODEL BY CURRENT-MODEL APPROPRIATENESS
+# ------------------------------------------------------------------------------
 
 preferred_by_appropriateness <- instructor_analysis |>
   mutate(
     appropriateness_group = case_when(
       current_model_appropriate_score >= 4 ~
         "Agree current model is appropriate",
+      
       current_model_appropriate_score == 3 ~
         "Neutral",
+      
       current_model_appropriate_score <= 2 ~
         "Disagree current model is appropriate",
+      
       TRUE ~ NA_character_
+    ),
+    
+    appropriateness_group = factor(
+      appropriateness_group,
+      levels = c(
+        "Disagree current model is appropriate",
+        "Neutral",
+        "Agree current model is appropriate"
+      )
     )
   ) |>
   count(
@@ -2180,26 +2498,248 @@ preferred_by_appropriateness <- instructor_analysis |>
     appropriateness_group
   ) |>
   mutate(
-    row_percent = if_else(
-      sum(n) > 0,
-      100 * n / sum(n),
-      NA_real_
-    )
+    group_n = sum(n),
+    row_percent = 100 * n / group_n
   ) |>
   ungroup()
 
-write.xlsx(
-  x = list(
-    Preferred_by_Continuation =
-      preferred_by_continuation,
-    Preferred_by_Appropriateness =
-      preferred_by_appropriateness
+print(
+  preferred_by_appropriateness,
+  n = Inf,
+  width = Inf
+)
+
+
+
+# ------------------------------------------------------------------------------
+# PHASE 4D FIGURE 1:
+# PREFERRED MODEL BY CONTINUATION RECOMMENDATION
+# ------------------------------------------------------------------------------
+
+preferred_continuation_plot_data <-
+  preferred_by_continuation |>
+  mutate(
+    continuation_label = recode(
+      as.character(
+        continuation_recommendation
+      ),
+      "Continue as-is" =
+        "Continue as-is",
+      "Continue with modifications (please describe)" =
+        "Continue with modifications",
+      "Discontinue" =
+        "Discontinue"
+    ),
+    
+    continuation_label = factor(
+      continuation_label,
+      levels = c(
+        "Discontinue",
+        "Continue with modifications",
+        "Continue as-is"
+      )
+    ),
+    
+    preferred_model_group = factor(
+      preferred_model_group,
+      levels = c(
+        "Human-led grading",
+        "Universal human review",
+        "Limited human review",
+        "No strong preference"
+      )
+    ),
+    
+    display_label = if_else(
+      n > 0,
+      paste0(
+        sprintf(
+          "%.1f%%",
+          row_percent
+        ),
+        "\n(n = ",
+        n,
+        ")"
+      ),
+      ""
+    )
+  )
+
+
+preferred_continuation_plot <- ggplot(
+  preferred_continuation_plot_data,
+  aes(
+    x = continuation_label,
+    y = row_percent,
+    fill = preferred_model_group
+  )
+) +
+  geom_col(
+    width = 0.72
+  ) +
+  geom_text(
+    aes(
+      label = display_label
+    ),
+    position = position_stack(
+      vjust = 0.5
+    ),
+    size = 3.2
+  ) +
+  coord_flip() +
+  scale_fill_manual(
+    values = c(
+      "Human-led grading" =
+        uf_light_blue,
+      "Universal human review" =
+        uf_blue,
+      "Limited human review" =
+        uf_orange,
+      "No strong preference" =
+        uf_light_gray
+    ),
+    drop = FALSE
+  ) +
+  scale_y_continuous(
+    breaks = seq(
+      0,
+      100,
+      by = 20
+    ),
+    labels = label_percent(
+      scale = 1
+    ),
+    expand = expansion(
+      mult = c(
+        0,
+        0.01
+      )
+    )
+  ) +
+  labs(
+    title =
+      "Preferred AI Oversight Model by Continuation Recommendation",
+    subtitle =
+      "Percentages calculated within each continuation group",
+    x = NULL,
+    y = "Percent within recommendation group",
+    fill = "Preferred oversight model",
+    caption =
+      "Primary analytic sample n = 31"
+  ) +
+  theme_instructor() +
+  theme(
+    legend.position = "bottom",
+    legend.box = "vertical"
+  )
+
+print(
+  preferred_continuation_plot
+)
+
+ggsave(
+  filename = file.path(
+    figure_dir,
+    "instructor_preferred_model_by_continuation.png"
   ),
-  file = file.path(
-    table_dir,
-    "instructor_phase4D_preferred_model.xlsx"
+  plot = preferred_continuation_plot,
+  width = 11,
+  height = 6.5,
+  dpi = 300,
+  bg = "white"
+)
+
+
+# ------------------------------------------------------------------------------
+# PHASE 4D FIGURE 2:
+# PREFERRED MODEL BY CURRENT-MODEL APPROPRIATENESS
+# ------------------------------------------------------------------------------
+
+preferred_appropriateness_plot <- ggplot(
+  preferred_appropriateness_plot_data,
+  aes(
+    x = appropriateness_label,
+    y = row_percent,
+    fill = preferred_model_group
+  )
+) +
+  geom_col(
+    width = 0.72
+  ) +
+  geom_text(
+    aes(
+      y = label_position,
+      label = display_label,
+      color = label_color
+    ),
+    size = 3.3
+  ) +
+  scale_color_identity() +
+  coord_flip() +
+  scale_fill_manual(
+    values = c(
+      "Human-led grading" = "#B56576",
+      "Universal human review" = "#6D597A",
+      "Limited human review" = "#2A9D8F",
+      "No strong preference" = "#D9D9D9"
+    ),
+    
+    breaks = c(
+      "No strong preference",
+      "Limited human review",
+      "Universal human review",
+      "Human-led grading"
+    ),
+    
+    drop = FALSE
+  ) +
+  scale_y_continuous(
+    breaks = seq(
+      0,
+      100,
+      by = 20
+    ),
+    labels = label_percent(
+      scale = 1
+    ),
+    expand = expansion(
+      mult = c(
+        0,
+        0.01
+      )
+    )
+  ) +
+  labs(
+    title =
+      "Preferred AI Oversight Model by Perceived Appropriateness",
+    subtitle =
+      "Percentages calculated within each appropriateness group",
+    x = NULL,
+    y = "Percent within appropriateness group",
+    fill = "Preferred oversight model",
+    caption =
+      "Primary analytic sample n = 31"
+  ) +
+  theme_instructor() +
+  theme(
+    legend.position = "bottom",
+    legend.box = "vertical"
+  )
+
+print(
+  preferred_appropriateness_plot
+)
+
+ggsave(
+  filename = file.path(
+    figure_dir,
+    "instructor_preferred_model_by_appropriateness.png"
   ),
-  overwrite = TRUE
+  plot = preferred_appropriateness_plot,
+  width = 11,
+  height = 6.5,
+  dpi = 300,
+  bg = "white"
 )
 
 

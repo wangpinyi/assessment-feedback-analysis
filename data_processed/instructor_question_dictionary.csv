@@ -1,0 +1,36 @@
+raw_variable,question_text,analysis_variable
+start_date,Start Date,start_date
+end_date,End Date,end_date
+status,Response Type,status
+ip_address,IP Address,ip_address
+progress,Progress,progress
+duration_in_seconds,Duration (in seconds),duration_in_seconds
+finished,Finished,finished
+recorded_date,Recorded Date,recorded_date
+response_id,Response ID,response_id
+recipient_last_name,Recipient Last Name,recipient_last_name
+recipient_first_name,Recipient First Name,recipient_first_name
+recipient_email,Recipient Email,recipient_email
+external_reference,External Data Reference,external_reference
+location_latitude,Location Latitude,location_latitude
+location_longitude,Location Longitude,location_longitude
+distribution_channel,Distribution Channel,distribution_channel
+user_language,User Language,user_language
+q1,How long have you been serving as an instructor for the literacy course?,instructor_cohorts
+q2,What's your gender?,gender
+q3,"How many years of total experience do you have in an educator or instructional role (teaching, coaching, instructional design, etc.)?",educator_experience
+q4,"Prior to this course, how would you describe your experience using AI tools in your teaching or instructional practice (e.g., AI lesson planning, feedback, or content tools)?",prior_ai_experience
+q5,"Before using Vollee in this course, had you used any other AI-assisted grading or automated feedback tools?",prior_ai_grading_tool
+q8,"On average, how much time did you spend per submission reviewing AI-generated grades and feedback before finalizing them?",review_time
+q9,"Compared to grading without AI assistance, using the AI tool...",time_impact
+q10,The AI tool fit naturally into my existing grading workflow.,workflow_fit
+q11,"9.	Describe what worked well, or did not work well, about the AI-assisted grading workflow from your perspective.",workflow_comment
+q13,The AI-generated feedback was well-aligned with the rubric criteria.,rubric_alignment
+q14,"The written feedback provided by AI was clear, specific, and constructive.",feedback_clarity
+q15,How would you rate the overall accuracy of the AI-generated scores relative to what you would have assigned?,score_accuracy
+q17,I trusted the AI-generated scores enough to use them as a meaningful starting point for my review.,score_trust
+q18,"The current model (AI grades, instructor reviews flagged/low-confidence submissions) is an appropriate use of AI in this context.",current_model_appropriate
+q19,Would you recommend continuing the use of the current model of AI-assisted grading and feedback in this course? - Selected Choice,continuation_recommendation
+q19_2_text,Would you recommend continuing the use of the current model of AI-assisted grading and feedback in this course? - Continue with modifications (please describe) - Text,continuation_modification_text
+q20,Which model would you prefer for AI use in grading and providing feedback?,preferred_ai_model
+q21,Is there anything else you would like us to know as we evaluate the future of AI-assisted grading and feedback?,additional_comment

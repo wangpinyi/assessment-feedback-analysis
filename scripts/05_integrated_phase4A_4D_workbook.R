@@ -2872,22 +2872,15 @@ cat(
 
 
 # ==============================================================================
-# PHASE 5, BLOCK 5: CREATE THE INTEGRATED EXCEL WORKBOOK
+# PHASE 5: SIMPLE FINAL INTEGRATED WORKBOOK
+# Run after Phase 5 Block 4
 # ==============================================================================
-
-
-# ------------------------------------------------------------------------------
-# 42. LOAD EXCEL PACKAGE
-# ------------------------------------------------------------------------------
-
-
-install.packages("openxlsx")
 
 library(openxlsx)
 
 
 # ------------------------------------------------------------------------------
-# 43. DEFINE WORKBOOK OUTPUT PATH
+# 1. OUTPUT SETTINGS
 # ------------------------------------------------------------------------------
 
 phase5_output_dir <- here(
@@ -2901,87 +2894,46 @@ dir.create(
   showWarnings = FALSE
 )
 
-phase5_draft_workbook_path <- file.path(
+phase5_final_workbook_path <- file.path(
   phase5_output_dir,
-  "learner_phase5_integrated_phase4A_4D_results_DRAFT.xlsx"
+  "learner_phase5_integrated_phase4A_4D_results_FINAL.xlsx"
 )
 
+# Figures are analytical content rather than workbook decoration.
+# Change to FALSE to omit the Figures worksheet.
+include_figures <- TRUE
+
 
 # ------------------------------------------------------------------------------
-# 44. DEFINE FIGURE PATHS
+# 2. PREPARE SIMPLE REPORT TABLES
 # ------------------------------------------------------------------------------
 
-phase5_figure_manifest <- tibble(
-  phase = c(
-    "Phase 4A",
-    "Phase 4B",
-    "Phase 4C",
-    "Phase 4D"
-  ),
-  
-  figure_title = c(
-    "Feedback-Experience Reliability Diagnostics",
-    "Adjusted AI-Comfort Probability by AI Awareness",
-    "Adjusted Perceived-Usefulness Probability by AI Comfort",
-    "Adjusted Probabilities of Preferred Feedback Models"
-  ),
-  
-  figure_path = c(
-    here(
-      "output",
-      "learner_scale_diagnostics",
-      "learner_feedback_reliability_plot.png"
-    ),
-    
-    here(
-      "output",
-      "learner_ai_comfort_ordinal",
-      "final",
-      "phase4B_adjusted_probability_by_awareness.png"
-    ),
-    
-    here(
-      "output",
-      "learner_ai_usefulness_ordinal",
-      "phase4C_adjusted_usefulness_probability.png"
-    ),
-    
-    here(
-      "output",
-      "learner_preferred_model_multinomial",
-      "phase4D_adjusted_preferred_model_probabilities.png"
-    )
-  )
+phase4A_polychoric_excel <- as.data.frame(
+  phase4A_objects$polychoric_matrix
 ) |>
-  mutate(
-    figure_exists = file.exists(
-      figure_path
-    )
+  tibble::rownames_to_column(
+    var = "item"
+  ) |>
+  as_tibble()
+
+phase4D_report_ready_coefficients <- phase4D_objects$
+  final_coefficient_table |>
+  filter(
+    term != "(Intercept)"
   )
 
-cat(
-  "\nFIGURE CHECK\n"
-)
-
-print(
-  phase5_figure_manifest,
-  n = Inf,
-  width = Inf
-)
-
 
 # ------------------------------------------------------------------------------
-# 45. HELPER: CONVERT OBJECTS TO EXCEL-SAFE TABLES
+# 3. CONVERT OBJECTS TO EXCEL-SAFE DATA FRAMES
 # ------------------------------------------------------------------------------
 
-excel_ready <- function(
+simple_excel_ready <- function(
     object
 ) {
   if (is.null(object)) {
     return(
       tibble(
-        note =
-          "This object was not available in the saved analysis checkpoint."
+        note = "Object unavailable."
       )
     )
   }
@@ -3003,9 +2955,7 @@ excel_ready <- function(
   
   object <- as_tibble(
     object
-  )
-  
-  object <- object |>
+  ) |>
     mutate(
       across(
         where(is.factor),
@@ -3054,184 +3004,156 @@ excel_ready <- function(
 
 
 # ------------------------------------------------------------------------------
-# 46. CREATE WORKBOOK
+# 4. DEFINE MINIMAL STYLES
 # ------------------------------------------------------------------------------
 
-phase5_workbook <- createWorkbook(
-  creator = "Pinyi Wang",
-  
-  title = paste0(
-    "Learner Assessment and Feedback Survey: ",
-    "Integrated Phase 4A-4D Results"
-  ),
-  
-  subject =
-    "Phase 5 quantitative integration",
-  
-  category =
-    "Learner assessment and feedback survey"
-)
-
-
-# ------------------------------------------------------------------------------
-# 47. DEFINE UF-INSPIRED WORKBOOK STYLES
-# ------------------------------------------------------------------------------
-
-uf_blue <- "#0021A5"
-uf_orange <- "#FA4616"
-
-light_blue <- "#DCE6F1"
-light_orange <- "#FCE4D6"
-light_gray <- "#F2F2F2"
-medium_gray <- "#666666"
-dark_gray <- "#333333"
-
-title_style <- createStyle(
-  fontName = "Aptos Display",
-  fontSize = 18,
-  fontColour = "#FFFFFF",
+sheet_title_style <- createStyle(
+  fontSize = 14,
   textDecoration = "bold",
-  fgFill = uf_blue,
-  halign = "left",
-  valign = "center"
+  valign = "top"
 )
 
-subtitle_style <- createStyle(
-  fontName = "Aptos",
+section_title_style <- createStyle(
   fontSize = 11,
-  fontColour = dark_gray,
-  textDecoration = "italic",
-  wrapText = TRUE,
-  valign = "center"
+  textDecoration = "bold",
+  border = "bottom",
+  borderStyle = "thin",
+  valign = "top"
 )
 
-section_style <- createStyle(
-  fontName = "Aptos",
-  fontSize = 12,
-  fontColour = "#FFFFFF",
+column_header_style <- createStyle(
   textDecoration = "bold",
-  fgFill = uf_orange,
-  halign = "left",
-  valign = "center"
+  border = "bottom",
+  borderStyle = "thin",
+  wrapText = TRUE,
+  valign = "top"
 )
 
 body_style <- createStyle(
-  fontName = "Aptos",
-  fontSize = 10,
-  fontColour = dark_gray,
   wrapText = TRUE,
   valign = "top"
 )
 
 note_style <- createStyle(
-  fontName = "Aptos",
-  fontSize = 10,
-  fontColour = dark_gray,
-  fgFill = light_blue,
-  wrapText = TRUE,
-  valign = "top"
-)
-
-caution_style <- createStyle(
-  fontName = "Aptos",
-  fontSize = 10,
-  fontColour = dark_gray,
-  fgFill = light_orange,
-  wrapText = TRUE,
-  valign = "top"
-)
-
-source_style <- createStyle(
-  fontName = "Aptos",
-  fontSize = 9,
-  fontColour = medium_gray,
+  textDecoration = "italic",
   wrapText = TRUE,
   valign = "top"
 )
 
 
 # ------------------------------------------------------------------------------
-# 48. HELPER: WRITE A TITLED SECTION
+# 5. SIMPLE WRITING FUNCTIONS
 # ------------------------------------------------------------------------------
 
-write_phase5_section <- function(
+write_sheet_title <- function(
     workbook,
-    sheet_name,
-    section_title,
-    table_object,
-    start_row,
-    table_name,
-    minimum_columns = 4,
-    body_row_height = 32
+    sheet,
+    title,
+    note = NULL
 ) {
-  table_data <- excel_ready(
-    table_object
-  )
-  
-  number_of_columns <- max(
-    ncol(
-      table_data
-    ),
-    minimum_columns
-  )
-  
-  mergeCells(
-    workbook,
-    sheet_name,
-    cols = 1:number_of_columns,
-    rows = start_row
-  )
-  
   writeData(
     workbook,
-    sheet_name,
-    section_title,
-    startRow = start_row,
-    startCol = 1
+    sheet,
+    title,
+    startRow = 1,
+    startCol = 1,
+    colNames = FALSE
   )
   
   addStyle(
     workbook,
-    sheet_name,
-    section_style,
-    rows = start_row,
-    cols = 1:number_of_columns,
-    gridExpand = TRUE
+    sheet,
+    sheet_title_style,
+    rows = 1,
+    cols = 1,
+    stack = TRUE
   )
   
-  setRowHeights(
-    workbook,
-    sheet_name,
-    rows = start_row,
-    heights = 23
-  )
-  
-  table_start_row <- start_row + 1
-  
-  writeDataTable(
-    workbook,
-    sheet_name,
-    table_data,
-    startRow = table_start_row,
-    startCol = 1,
-    tableName = table_name,
-    tableStyle = "TableStyleMedium2",
-    withFilter = TRUE
-  )
-  
-  if (nrow(table_data) > 0) {
-    body_start_row <- table_start_row + 1
-    body_end_row <- table_start_row + nrow(
-      table_data
+  if (!is.null(note)) {
+    writeData(
+      workbook,
+      sheet,
+      note,
+      startRow = 2,
+      startCol = 1,
+      colNames = FALSE
     )
     
     addStyle(
       workbook,
-      sheet_name,
+      sheet,
+      note_style,
+      rows = 2,
+      cols = 1,
+      stack = TRUE
+    )
+    
+    setRowHeights(
+      workbook,
+      sheet,
+      rows = 2,
+      heights = 35
+    )
+  }
+}
+
+
+write_simple_section <- function(
+    workbook,
+    sheet,
+    section_title,
+    data,
+    start_row,
+    body_row_height = 30
+) {
+  data <- simple_excel_ready(
+    data
+  )
+  
+  writeData(
+    workbook,
+    sheet,
+    section_title,
+    startRow = start_row,
+    startCol = 1,
+    colNames = FALSE
+  )
+  
+  addStyle(
+    workbook,
+    sheet,
+    section_title_style,
+    rows = start_row,
+    cols = 1,
+    stack = TRUE
+  )
+  
+  table_start_row <- start_row + 1
+  
+  writeData(
+    workbook,
+    sheet,
+    data,
+    startRow = table_start_row,
+    startCol = 1,
+    colNames = TRUE,
+    headerStyle = column_header_style,
+    borders = "none"
+  )
+  
+  if (nrow(data) > 0) {
+    body_start_row <- table_start_row + 1
+    body_end_row <- table_start_row + nrow(
+      data
+    )
+    
+    addStyle(
+      workbook,
+      sheet,
       body_style,
       rows = body_start_row:body_end_row,
-      cols = 1:ncol(
-        table_data
+      cols = seq_len(
+        ncol(data)
       ),
       gridExpand = TRUE,
       stack = TRUE
@@ -3239,7 +3161,7 @@ write_phase5_section <- function(
     
     setRowHeights(
       workbook,
-      sheet_name,
+      sheet,
       rows = body_start_row:body_end_row,
       heights = body_row_height
     )
@@ -3247,485 +3169,111 @@ write_phase5_section <- function(
   
   table_start_row +
     nrow(
-      table_data
+      data
     ) +
     3
 }
 
 
 # ------------------------------------------------------------------------------
-# 49. WORKBOOK GUIDE SHEET
+# 6. CREATE WORKBOOK
+# ------------------------------------------------------------------------------
+
+phase5_workbook <- createWorkbook(
+  creator = "Pinyi Wang",
+  title = "Learner Survey Integrated Phase 4A-4D Results",
+  subject = "Phase 5 quantitative integration"
+)
+
+
+# ------------------------------------------------------------------------------
+# 7. SUMMARY SHEET
 # ------------------------------------------------------------------------------
 
 addWorksheet(
   phase5_workbook,
-  "Workbook Guide",
-  gridLines = FALSE,
-  tabColour = uf_blue
+  "Summary",
+  gridLines = TRUE
 )
 
-mergeCells(
+write_sheet_title(
   phase5_workbook,
-  "Workbook Guide",
-  cols = 1:5,
-  rows = 1
-)
-
-writeData(
-  phase5_workbook,
-  "Workbook Guide",
+  "Summary",
+  "Learner Survey: Integrated Phase 4A-4D Results",
   paste0(
-    "Learner Assessment and Feedback Survey: ",
-    "Integrated Phase 4A-4D Results"
-  ),
-  startRow = 1,
-  startCol = 1
-)
-
-addStyle(
-  phase5_workbook,
-  "Workbook Guide",
-  title_style,
-  rows = 1,
-  cols = 1:5,
-  gridExpand = TRUE
-)
-
-setRowHeights(
-  phase5_workbook,
-  "Workbook Guide",
-  rows = 1,
-  heights = 32
-)
-
-mergeCells(
-  phase5_workbook,
-  "Workbook Guide",
-  cols = 1:5,
-  rows = 2
-)
-
-writeData(
-  phase5_workbook,
-  "Workbook Guide",
-  paste0(
-    "Phase 5 integrates the finalized quantitative findings from Phases ",
-    "4A through 4D. Phase 6 is reserved for the later qualitative review, ",
-    "qualitative integration, recommendations, and final-report drafting."
-  ),
-  startRow = 2,
-  startCol = 1
-)
-
-addStyle(
-  phase5_workbook,
-  "Workbook Guide",
-  subtitle_style,
-  rows = 2,
-  cols = 1:5,
-  gridExpand = TRUE
-)
-
-phase5_workbook_guide <- tibble(
-  worksheet = c(
-    "Executive Summary",
-    "Cross-Phase Synthesis",
-    "Headline Metrics",
-    "Phase 4A Scale",
-    "Phase 4B Comfort",
-    "Phase 4C Usefulness",
-    "Phase 4D Preference",
-    "Figures",
-    "Source Manifest"
-  ),
-  
-  purpose = c(
-    "Four-row summary of the principal finding from each quantitative phase.",
-    
-    "Integrated evidence pathway connecting feedback experience, AI comfort, perceived usefulness, and preferred implementation model.",
-    
-    "Long-form inventory of the principal estimates, tests, interpretations, and cautions.",
-    
-    "Scale diagnostics, polychoric correlations, ordinal reliability, composite distribution, and measurement decision.",
-    
-    "Final AI-comfort model, effects, adjusted probabilities, and analysis decision.",
-    
-    "Final perceived-usefulness model, effects, model comparisons, and adjusted probabilities.",
-    
-    "Preferred-model distribution, human-review summary, multinomial model results, and adjusted probabilities.",
-    
-    "Four report-ready figures selected from Phases 4A-4D.",
-    
-    "Authoritative checkpoint files and figure sources used to construct this workbook."
-  ),
-  
-  reporting_status = c(
-    "Primary reporting sheet",
-    "Primary reporting sheet",
-    "Supporting reporting sheet",
-    "Technical detail",
-    "Technical detail",
-    "Technical detail",
-    "Technical detail",
-    "Visual evidence",
-    "Reproducibility record"
+    "The sequence from feedback experience to AI comfort, perceived ",
+    "usefulness, and preferred feedback model is an interpretive and ",
+    "associational synthesis, not a causal or mediation model."
   )
 )
 
-writeDataTable(
+summary_row <- 4
+
+summary_row <- write_simple_section(
   phase5_workbook,
-  "Workbook Guide",
-  phase5_workbook_guide,
-  startRow = 4,
-  startCol = 1,
-  tableName = "tblWorkbookGuide",
-  tableStyle = "TableStyleMedium2"
+  "Summary",
+  "Executive Summary",
+  phase5_executive_summary,
+  summary_row,
+  body_row_height = 75
 )
 
-addStyle(
+summary_row <- write_simple_section(
   phase5_workbook,
-  "Workbook Guide",
-  body_style,
-  rows = 5:(
-    4 +
-      nrow(
-        phase5_workbook_guide
-      )
-  ),
-  cols = 1:3,
-  gridExpand = TRUE,
-  stack = TRUE
-)
-
-setRowHeights(
-  phase5_workbook,
-  "Workbook Guide",
-  rows = 5:(
-    4 +
-      nrow(
-        phase5_workbook_guide
-      )
-  ),
-  heights = 42
+  "Summary",
+  "Cross-Phase Synthesis",
+  phase5_cross_phase_synthesis,
+  summary_row,
+  body_row_height = 80
 )
 
 setColWidths(
   phase5_workbook,
-  "Workbook Guide",
-  cols = 1:3,
-  widths = c(
-    25,
-    82,
-    28
-  )
-)
-
-freezePane(
-  phase5_workbook,
-  "Workbook Guide",
-  firstActiveRow = 5
-)
-
-
-# ------------------------------------------------------------------------------
-# 50. EXECUTIVE SUMMARY SHEET
-# ------------------------------------------------------------------------------
-
-addWorksheet(
-  phase5_workbook,
-  "Executive Summary",
-  gridLines = FALSE,
-  tabColour = uf_orange
-)
-
-mergeCells(
-  phase5_workbook,
-  "Executive Summary",
-  cols = 1:5,
-  rows = 1
-)
-
-writeData(
-  phase5_workbook,
-  "Executive Summary",
-  "Executive Summary of Quantitative Findings",
-  startRow = 1,
-  startCol = 1
-)
-
-addStyle(
-  phase5_workbook,
-  "Executive Summary",
-  title_style,
-  rows = 1,
-  cols = 1:5,
-  gridExpand = TRUE
-)
-
-mergeCells(
-  phase5_workbook,
-  "Executive Summary",
-  cols = 1:5,
-  rows = 2
-)
-
-writeData(
-  phase5_workbook,
-  "Executive Summary",
-  paste0(
-    "The findings form an analytic sequence from the quality of the existing ",
-    "feedback experience to AI comfort, perceived AI usefulness, and preferred ",
-    "feedback-model design. The sequence is interpretive and associational; ",
-    "it is not a causal or mediation model."
-  ),
-  startRow = 2,
-  startCol = 1
-)
-
-addStyle(
-  phase5_workbook,
-  "Executive Summary",
-  note_style,
-  rows = 2,
-  cols = 1:5,
-  gridExpand = TRUE
-)
-
-setRowHeights(
-  phase5_workbook,
-  "Executive Summary",
-  rows = 2,
-  heights = 42
-)
-
-writeDataTable(
-  phase5_workbook,
-  "Executive Summary",
-  excel_ready(
-    phase5_executive_summary
-  ),
-  startRow = 4,
-  startCol = 1,
-  tableName = "tblExecutiveSummary",
-  tableStyle = "TableStyleMedium2",
-  withFilter = TRUE
-)
-
-addStyle(
-  phase5_workbook,
-  "Executive Summary",
-  body_style,
-  rows = 5:(
-    4 +
-      nrow(
-        phase5_executive_summary
-      )
-  ),
-  cols = 1:5,
-  gridExpand = TRUE,
-  stack = TRUE
-)
-
-setRowHeights(
-  phase5_workbook,
-  "Executive Summary",
-  rows = 5:(
-    4 +
-      nrow(
-        phase5_executive_summary
-      )
-  ),
-  heights = 86
-)
-
-setColWidths(
-  phase5_workbook,
-  "Executive Summary",
+  "Summary",
   cols = 1:5,
   widths = c(
-    13,
-    31,
-    72,
-    66,
-    66
-  )
-)
-
-freezePane(
-  phase5_workbook,
-  "Executive Summary",
-  firstActiveRow = 5
-)
-
-
-# ------------------------------------------------------------------------------
-# 51. CROSS-PHASE SYNTHESIS SHEET
-# ------------------------------------------------------------------------------
-
-addWorksheet(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  gridLines = FALSE,
-  tabColour = uf_blue
-)
-
-mergeCells(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  cols = 1:5,
-  rows = 1
-)
-
-writeData(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  "Cross-Phase Evidence Pathway",
-  startRow = 1,
-  startCol = 1
-)
-
-addStyle(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  title_style,
-  rows = 1,
-  cols = 1:5,
-  gridExpand = TRUE
-)
-
-mergeCells(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  cols = 1:5,
-  rows = 2
-)
-
-writeData(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  paste0(
-    "Feedback foundation  →  AI readiness and comfort  →  ",
-    "perceived AI usefulness  →  preferred implementation model"
-  ),
-  startRow = 2,
-  startCol = 1
-)
-
-addStyle(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  note_style,
-  rows = 2,
-  cols = 1:5,
-  gridExpand = TRUE
-)
-
-writeDataTable(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  excel_ready(
-    phase5_cross_phase_synthesis
-  ),
-  startRow = 4,
-  startCol = 1,
-  tableName = "tblCrossPhaseSynthesis",
-  tableStyle = "TableStyleMedium2",
-  withFilter = TRUE
-)
-
-addStyle(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  body_style,
-  rows = 5:(
-    4 +
-      nrow(
-        phase5_cross_phase_synthesis
-      )
-  ),
-  cols = 1:5,
-  gridExpand = TRUE,
-  stack = TRUE
-)
-
-setRowHeights(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  rows = 5:(
-    4 +
-      nrow(
-        phase5_cross_phase_synthesis
-      )
-  ),
-  heights = 90
-)
-
-setColWidths(
-  phase5_workbook,
-  "Cross-Phase Synthesis",
-  cols = 1:5,
-  widths = c(
-    38,
+    30,
     24,
-    65,
-    67,
-    61
+    52,
+    52,
+    50
   )
 )
 
 freezePane(
   phase5_workbook,
-  "Cross-Phase Synthesis",
-  firstActiveRow = 5
+  "Summary",
+  firstActiveRow = 4
 )
 
 
 # ------------------------------------------------------------------------------
-# 52. HEADLINE METRICS SHEET
+# 8. HEADLINE METRICS SHEET
 # ------------------------------------------------------------------------------
 
 addWorksheet(
   phase5_workbook,
   "Headline Metrics",
-  gridLines = FALSE,
-  tabColour = uf_orange
+  gridLines = TRUE
 )
 
-mergeCells(
+write_sheet_title(
   phase5_workbook,
   "Headline Metrics",
-  cols = 1:7,
-  rows = 1
+  "Integrated Headline Metrics"
 )
 
 writeData(
   phase5_workbook,
   "Headline Metrics",
-  "Integrated Headline Metrics and Interpretive Notes",
-  startRow = 1,
-  startCol = 1
-)
-
-addStyle(
-  phase5_workbook,
-  "Headline Metrics",
-  title_style,
-  rows = 1,
-  cols = 1:7,
-  gridExpand = TRUE
-)
-
-writeDataTable(
-  phase5_workbook,
-  "Headline Metrics",
-  excel_ready(
+  simple_excel_ready(
     phase5_headline_metrics
   ),
   startRow = 3,
   startCol = 1,
-  tableName = "tblHeadlineMetrics",
-  tableStyle = "TableStyleMedium2",
-  withFilter = TRUE
+  colNames = TRUE,
+  headerStyle = column_header_style,
+  borders = "none"
 )
 
 addStyle(
@@ -3752,7 +3300,7 @@ setRowHeights(
         phase5_headline_metrics
       )
   ),
-  heights = 55
+  heights = 48
 )
 
 setColWidths(
@@ -3760,13 +3308,13 @@ setColWidths(
   "Headline Metrics",
   cols = 1:7,
   widths = c(
-    13,
-    32,
-    43,
-    25,
-    66,
-    66,
-    58
+    12,
+    29,
+    38,
+    24,
+    50,
+    50,
+    46
   )
 )
 
@@ -3778,180 +3326,165 @@ freezePane(
 
 
 # ------------------------------------------------------------------------------
-# 53. PHASE 4A DETAIL SHEET
+# 9. PHASE 4A SHEET
 # ------------------------------------------------------------------------------
 
 addWorksheet(
   phase5_workbook,
-  "Phase 4A Scale",
-  gridLines = FALSE,
-  tabColour = uf_blue
+  "Phase 4A",
+  gridLines = TRUE
 )
 
-phase4A_excel_row <- 1
-
-phase4A_excel_row <- write_phase5_section(
+write_sheet_title(
   phase5_workbook,
-  "Phase 4A Scale",
-  "Verified Phase 4A Headline Results",
+  "Phase 4A",
+  "Phase 4A: Feedback-Experience Scale Diagnostics"
+)
+
+phase4A_row <- 3
+
+phase4A_row <- write_simple_section(
+  phase5_workbook,
+  "Phase 4A",
+  "Headline Results",
   phase4A_headline_metrics_verified,
-  phase4A_excel_row,
-  "tblPhase4AHeadline",
-  body_row_height = 44
+  phase4A_row,
+  body_row_height = 42
 )
 
-phase4A_excel_row <- write_phase5_section(
+phase4A_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4A Scale",
+  "Phase 4A",
   "Polychoric Correlation Matrix",
-  phase4A_polychoric_matrix,
-  phase4A_excel_row,
-  "tblPhase4APolychoric"
+  phase4A_polychoric_excel,
+  phase4A_row
 )
 
-phase4A_excel_row <- write_phase5_section(
+phase4A_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4A Scale",
+  "Phase 4A",
   "Ordinal Item Diagnostics",
   phase4A_objects$ordinal_item_diagnostics,
-  phase4A_excel_row,
-  "tblPhase4AOrdinalItems"
+  phase4A_row
 )
 
-phase4A_excel_row <- write_phase5_section(
+phase4A_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4A Scale",
-  "Observed Reliability Summary",
-  phase4A_objects$observed_alpha_summary,
-  phase4A_excel_row,
-  "tblPhase4AObservedReliability"
-)
-
-phase4A_excel_row <- write_phase5_section(
-  phase5_workbook,
-  "Phase 4A Scale",
+  "Phase 4A",
   "Composite Summary",
   phase4A_objects$composite_summary,
-  phase4A_excel_row,
-  "tblPhase4AComposite"
+  phase4A_row
 )
 
-phase4A_excel_row <- write_phase5_section(
+phase4A_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4A Scale",
+  "Phase 4A",
   "Measurement Decision",
   phase4A_objects$measurement_decision,
-  phase4A_excel_row,
-  "tblPhase4ADecision",
-  body_row_height = 30
+  phase4A_row
 )
 
 setColWidths(
   phase5_workbook,
-  "Phase 4A Scale",
+  "Phase 4A",
   cols = 1:10,
   widths = c(
     42,
-    24,
     28,
-    28,
-    24,
-    24,
-    24,
-    24,
-    24,
-    24
+    34,
+    34,
+    22,
+    22,
+    22,
+    22,
+    22,
+    22
   )
 )
 
 freezePane(
   phase5_workbook,
-  "Phase 4A Scale",
-  firstActiveRow = 2
+  "Phase 4A",
+  firstActiveRow = 3
 )
 
 
 # ------------------------------------------------------------------------------
-# 54. PHASE 4B DETAIL SHEET
+# 10. PHASE 4B SHEET
 # ------------------------------------------------------------------------------
 
 addWorksheet(
   phase5_workbook,
-  "Phase 4B Comfort",
-  gridLines = FALSE,
-  tabColour = uf_orange
+  "Phase 4B",
+  gridLines = TRUE
 )
 
-phase4B_excel_row <- 1
-
-phase4B_excel_row <- write_phase5_section(
+write_sheet_title(
   phase5_workbook,
-  "Phase 4B Comfort",
-  "Phase 4B Headline Summary",
+  "Phase 4B",
+  "Phase 4B: AI Comfort"
+)
+
+phase4B_row <- 3
+
+phase4B_row <- write_simple_section(
+  phase5_workbook,
+  "Phase 4B",
+  "Headline Summary",
   phase4B_headline_summary,
-  phase4B_excel_row,
-  "tblPhase4BHeadline",
-  body_row_height = 50
+  phase4B_row,
+  body_row_height = 46
 )
 
-phase4B_excel_row <- write_phase5_section(
+phase4B_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4B Comfort",
+  "Phase 4B",
   "Final Model Fit",
   phase4B_model_fit_verified,
-  phase4B_excel_row,
-  "tblPhase4BModelFit"
+  phase4B_row
 )
 
-phase4B_excel_row <- write_phase5_section(
+phase4B_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4B Comfort",
+  "Phase 4B",
   "Verified Model Effects",
   phase4B_effects_verified,
-  phase4B_excel_row,
-  "tblPhase4BEffects"
+  phase4B_row
 )
 
-phase4B_excel_row <- write_phase5_section(
+phase4B_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4B Comfort",
-  "Adjusted Comfort Probabilities by AI Awareness",
+  "Phase 4B",
+  "Adjusted Probabilities by AI Awareness",
   phase4B_objects$adjusted_probability_by_awareness,
-  phase4B_excel_row,
-  "tblPhase4BAwarenessProb"
+  phase4B_row
 )
 
-phase4B_excel_row <- write_phase5_section(
+phase4B_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4B Comfort",
-  paste0(
-    "Adjusted Comfort Probabilities by Feedback Experience ",
-    "and AI Awareness"
-  ),
+  "Phase 4B",
+  "Adjusted Probabilities by Feedback Experience and AI Awareness",
   phase4B_objects$
     adjusted_probability_by_feedback_and_awareness,
-  phase4B_excel_row,
-  "tblPhase4BFeedbackProb"
+  phase4B_row
 )
 
-phase4B_excel_row <- write_phase5_section(
+phase4B_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4B Comfort",
+  "Phase 4B",
   "Final Analysis Decision",
   phase4B_objects$final_analysis_decision,
-  phase4B_excel_row,
-  "tblPhase4BDecision",
-  body_row_height = 30
+  phase4B_row
 )
 
 setColWidths(
   phase5_workbook,
-  "Phase 4B Comfort",
+  "Phase 4B",
   cols = 1:11,
   widths = c(
-    48,
-    32,
-    22,
+    46,
+    34,
+    25,
     22,
     22,
     22,
@@ -3965,96 +3498,94 @@ setColWidths(
 
 freezePane(
   phase5_workbook,
-  "Phase 4B Comfort",
-  firstActiveRow = 2
+  "Phase 4B",
+  firstActiveRow = 3
 )
 
 
 # ------------------------------------------------------------------------------
-# 55. PHASE 4C DETAIL SHEET
+# 11. PHASE 4C SHEET
 # ------------------------------------------------------------------------------
 
 addWorksheet(
   phase5_workbook,
-  "Phase 4C Usefulness",
-  gridLines = FALSE,
-  tabColour = uf_blue
+  "Phase 4C",
+  gridLines = TRUE
 )
 
-phase4C_excel_row <- 1
-
-phase4C_excel_row <- write_phase5_section(
+write_sheet_title(
   phase5_workbook,
-  "Phase 4C Usefulness",
-  "Phase 4C Headline Summary",
+  "Phase 4C",
+  "Phase 4C: Perceived AI Usefulness"
+)
+
+phase4C_row <- 3
+
+phase4C_row <- write_simple_section(
+  phase5_workbook,
+  "Phase 4C",
+  "Headline Summary",
   phase4C_headline_summary,
-  phase4C_excel_row,
-  "tblPhase4CHeadline",
-  body_row_height = 50
+  phase4C_row,
+  body_row_height = 46
 )
 
-phase4C_excel_row <- write_phase5_section(
+phase4C_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4C Usefulness",
-  "Observed Outcome Distribution",
+  "Phase 4C",
+  "Outcome Distribution",
   phase4C_objects$outcome_distribution,
-  phase4C_excel_row,
-  "tblPhase4CDistribution"
+  phase4C_row
 )
 
-phase4C_excel_row <- write_phase5_section(
+phase4C_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4C Usefulness",
+  "Phase 4C",
   "Final Model Fit",
   phase4C_model_fit_verified,
-  phase4C_excel_row,
-  "tblPhase4CModelFit"
+  phase4C_row
 )
 
-phase4C_excel_row <- write_phase5_section(
+phase4C_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4C Usefulness",
+  "Phase 4C",
   "Verified AI-Comfort Effects",
   phase4C_effects_verified,
-  phase4C_excel_row,
-  "tblPhase4CEffects"
+  phase4C_row
 )
 
-phase4C_excel_row <- write_phase5_section(
+phase4C_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4C Usefulness",
+  "Phase 4C",
   "Adjusted Agreement Probabilities by AI Comfort",
   phase4C_objects$predicted_probabilities,
-  phase4C_excel_row,
-  "tblPhase4CPredictedProb"
+  phase4C_row
 )
 
-phase4C_excel_row <- write_phase5_section(
+phase4C_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4C Usefulness",
+  "Phase 4C",
   "Proportional-Odds Versus Location-Scale Comparison",
   phase4C_objects$proportional_vs_scale_comparison,
-  phase4C_excel_row,
-  "tblPhase4CLocationScale"
+  phase4C_row
 )
 
-phase4C_excel_row <- write_phase5_section(
+phase4C_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4C Usefulness",
+  "Phase 4C",
   "Feedback-Experience Addition Comparison",
   phase4C_objects$feedback_addition_comparison,
-  phase4C_excel_row,
-  "tblPhase4CFeedbackAdd"
+  phase4C_row
 )
 
 setColWidths(
   phase5_workbook,
-  "Phase 4C Usefulness",
+  "Phase 4C",
   cols = 1:11,
   widths = c(
-    45,
-    33,
-    22,
+    44,
+    34,
+    24,
     22,
     22,
     22,
@@ -4068,114 +3599,102 @@ setColWidths(
 
 freezePane(
   phase5_workbook,
-  "Phase 4C Usefulness",
-  firstActiveRow = 2
+  "Phase 4C",
+  firstActiveRow = 3
 )
 
 
 # ------------------------------------------------------------------------------
-# 56. PHASE 4D DETAIL SHEET
+# 12. PHASE 4D SHEET
 # ------------------------------------------------------------------------------
 
 addWorksheet(
   phase5_workbook,
-  "Phase 4D Preference",
-  gridLines = FALSE,
-  tabColour = uf_orange
+  "Phase 4D",
+  gridLines = TRUE
 )
 
-phase4D_excel_row <- 1
-
-phase4D_excel_row <- write_phase5_section(
+write_sheet_title(
   phase5_workbook,
-  "Phase 4D Preference",
-  "Phase 4D Headline Summary",
+  "Phase 4D",
+  "Phase 4D: Preferred Feedback Model"
+)
+
+phase4D_row <- 3
+
+phase4D_row <- write_simple_section(
+  phase5_workbook,
+  "Phase 4D",
+  "Headline Summary",
   phase4D_headline_summary,
-  phase4D_excel_row,
-  "tblPhase4DHeadline",
-  body_row_height = 50
+  phase4D_row,
+  body_row_height = 46
 )
 
-phase4D_excel_row <- write_phase5_section(
+phase4D_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4D Preference",
+  "Phase 4D",
   "Preferred-Model Distribution",
   phase4D_objects$preferred_model_distribution,
-  phase4D_excel_row,
-  "tblPhase4DDistribution"
+  phase4D_row
 )
 
-phase4D_excel_row <- write_phase5_section(
+phase4D_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4D Preference",
+  "Phase 4D",
   "Human-Review Summary",
   phase4D_objects$human_review_summary,
-  phase4D_excel_row,
-  "tblPhase4DHumanReview"
+  phase4D_row
 )
 
-phase4D_excel_row <- write_phase5_section(
+phase4D_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4D Preference",
-  "Final Model Fit",
-  phase4D_model_fit,
-  phase4D_excel_row,
-  "tblPhase4DModelFit"
-)
-
-phase4D_excel_row <- write_phase5_section(
-  phase5_workbook,
-  "Phase 4D Preference",
+  "Phase 4D",
   "Final Model Selection",
   phase4D_objects$final_model_selection,
-  phase4D_excel_row,
-  "tblPhase4DSelection"
+  phase4D_row
 )
 
-phase4D_excel_row <- write_phase5_section(
+phase4D_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4D Preference",
+  "Phase 4D",
   "Report-Ready Multinomial Coefficients",
   phase4D_report_ready_coefficients,
-  phase4D_excel_row,
-  "tblPhase4DCoefficients"
+  phase4D_row
 )
 
-phase4D_excel_row <- write_phase5_section(
+phase4D_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4D Preference",
+  "Phase 4D",
   "Reduced-Model Likelihood-Ratio Comparisons",
   phase4D_objects$reduced_model_comparisons,
-  phase4D_excel_row,
-  "tblPhase4DReducedTests"
+  phase4D_row
 )
 
-phase4D_excel_row <- write_phase5_section(
+phase4D_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4D Preference",
+  "Phase 4D",
   "Grouped Adjusted Probabilities",
   phase4D_objects$grouped_probabilities,
-  phase4D_excel_row,
-  "tblPhase4DGroupedProb"
+  phase4D_row
 )
 
-phase4D_excel_row <- write_phase5_section(
+phase4D_row <- write_simple_section(
   phase5_workbook,
-  "Phase 4D Preference",
+  "Phase 4D",
   "Maximum-Likelihood Versus Bias-Reduced Estimates",
   phase4D_objects$estimator_comparison,
-  phase4D_excel_row,
-  "tblPhase4DEstimatorComparison"
+  phase4D_row
 )
 
 setColWidths(
   phase5_workbook,
-  "Phase 4D Preference",
+  "Phase 4D",
   cols = 1:12,
   widths = c(
-    52,
-    40,
-    38,
+    48,
+    39,
+    36,
     24,
     24,
     24,
@@ -4190,270 +3709,234 @@ setColWidths(
 
 freezePane(
   phase5_workbook,
-  "Phase 4D Preference",
-  firstActiveRow = 2
+  "Phase 4D",
+  firstActiveRow = 3
 )
 
 
 # ------------------------------------------------------------------------------
-# 57. FIGURES SHEET
+# 13. OPTIONAL FIGURES SHEET
 # ------------------------------------------------------------------------------
 
-addWorksheet(
-  phase5_workbook,
-  "Figures",
-  gridLines = FALSE,
-  tabColour = uf_blue
-)
-
-mergeCells(
-  phase5_workbook,
-  "Figures",
-  cols = 1:10,
-  rows = 1
-)
-
-writeData(
-  phase5_workbook,
-  "Figures",
-  "Report-Ready Figures from Phases 4A-4D",
-  startRow = 1,
-  startCol = 1
-)
-
-addStyle(
-  phase5_workbook,
-  "Figures",
-  title_style,
-  rows = 1,
-  cols = 1:10,
-  gridExpand = TRUE
-)
-
-figure_title_rows <- c(
-  3,
-  35,
-  67,
-  99
-)
-
-figure_image_rows <- figure_title_rows + 1
-
-for (
-  figure_index in seq_len(
-    nrow(
-      phase5_figure_manifest
-    )
-  )
-) {
-  mergeCells(
-    phase5_workbook,
-    "Figures",
-    cols = 1:10,
-    rows = figure_title_rows[
-      figure_index
-    ]
-  )
+phase5_figure_manifest <- tibble(
+  phase = c(
+    "Phase 4A",
+    "Phase 4B",
+    "Phase 4C",
+    "Phase 4D"
+  ),
   
-  writeData(
-    phase5_workbook,
-    "Figures",
-    paste0(
-      phase5_figure_manifest$phase[
-        figure_index
-      ],
-      ": ",
-      phase5_figure_manifest$figure_title[
-        figure_index
-      ]
+  title = c(
+    "Feedback-Experience Reliability Diagnostics",
+    "Adjusted AI-Comfort Probability by AI Awareness",
+    "Adjusted Perceived-Usefulness Probability by AI Comfort",
+    "Adjusted Probabilities of Preferred Feedback Models"
+  ),
+  
+  path = c(
+    here(
+      "output",
+      "learner_scale_diagnostics",
+      "learner_feedback_reliability_plot.png"
     ),
-    startRow =
-      figure_title_rows[
-        figure_index
-      ],
-    startCol = 1
+    
+    here(
+      "output",
+      "learner_ai_comfort_ordinal",
+      "final",
+      "phase4B_adjusted_probability_by_awareness.png"
+    ),
+    
+    here(
+      "output",
+      "learner_ai_usefulness_ordinal",
+      "phase4C_adjusted_usefulness_probability.png"
+    ),
+    
+    here(
+      "output",
+      "learner_preferred_model_multinomial",
+      "phase4D_adjusted_preferred_model_probabilities.png"
+    )
   )
-  
-  addStyle(
+) |>
+  mutate(
+    exists = file.exists(
+      path
+    )
+  )
+
+if (include_figures) {
+  addWorksheet(
     phase5_workbook,
     "Figures",
-    section_style,
-    rows =
-      figure_title_rows[
-        figure_index
-      ],
-    cols = 1:10,
-    gridExpand = TRUE
+    gridLines = TRUE
   )
   
-  if (
-    phase5_figure_manifest$figure_exists[
+  write_sheet_title(
+    phase5_workbook,
+    "Figures",
+    "Report-Ready Figures"
+  )
+  
+  figure_title_rows <- c(
+    3,
+    31,
+    59,
+    87
+  )
+  
+  for (
+    figure_index in seq_len(
+      nrow(
+        phase5_figure_manifest
+      )
+    )
+  ) {
+    current_row <- figure_title_rows[
       figure_index
     ]
-  ) {
-    insertImage(
-      phase5_workbook,
-      "Figures",
-      phase5_figure_manifest$figure_path[
-        figure_index
-      ],
-      startRow =
-        figure_image_rows[
-          figure_index
-        ],
-      startCol = 1,
-      width = 12,
-      height = 7.4,
-      units = "in",
-      dpi = 300
-    )
-  } else {
+    
     writeData(
       phase5_workbook,
       "Figures",
       paste0(
-        "Figure file not found: ",
-        phase5_figure_manifest$figure_path[
+        phase5_figure_manifest$phase[
+          figure_index
+        ],
+        ": ",
+        phase5_figure_manifest$title[
           figure_index
         ]
       ),
-      startRow =
-        figure_image_rows[
-          figure_index
-        ],
-      startCol = 1
+      startRow = current_row,
+      startCol = 1,
+      colNames = FALSE
     )
     
     addStyle(
       phase5_workbook,
       "Figures",
-      caution_style,
-      rows =
-        figure_image_rows[
+      section_title_style,
+      rows = current_row,
+      cols = 1,
+      stack = TRUE
+    )
+    
+    if (
+      phase5_figure_manifest$exists[
+        figure_index
+      ]
+    ) {
+      insertImage(
+        phase5_workbook,
+        "Figures",
+        phase5_figure_manifest$path[
           figure_index
         ],
-      cols = 1:10,
-      gridExpand = TRUE
-    )
+        startRow = current_row + 1,
+        startCol = 1,
+        width = 10.5,
+        height = 6.4,
+        units = "in",
+        dpi = 300
+      )
+    } else {
+      writeData(
+        phase5_workbook,
+        "Figures",
+        "Figure file not found.",
+        startRow = current_row + 1,
+        startCol = 1,
+        colNames = FALSE
+      )
+    }
   }
+  
+  setColWidths(
+    phase5_workbook,
+    "Figures",
+    cols = 1:9,
+    widths = 13
+  )
 }
 
-setColWidths(
-  phase5_workbook,
-  "Figures",
-  cols = 1:10,
-  widths = 14
-)
-
 
 # ------------------------------------------------------------------------------
-# 58. SOURCE MANIFEST SHEET
+# 14. SOURCE MANIFEST SHEET
 # ------------------------------------------------------------------------------
 
-phase5_source_manifest <- bind_rows(
-  phase5_source_paths |>
-    transmute(
-      phase_or_resource =
-        source_name,
-      
-      resource_type =
-        "RDS analysis source",
-      
-      file_path =
-        source_path,
-      
-      file_exists =
-        file_exists,
-      
-      file_size_kb =
-        round(
-          file_size_kb,
-          2
-        )
-    ),
-  
-  phase5_figure_manifest |>
-    transmute(
-      phase_or_resource =
-        paste0(
+phase5_source_manifest_simple <- phase5_source_paths |>
+  transmute(
+    source = source_name,
+    type = "RDS analysis source",
+    path = source_path,
+    exists = file_exists,
+    size_kb = round(
+      file_size_kb,
+      2
+    )
+  )
+
+if (include_figures) {
+  phase5_source_manifest_simple <- bind_rows(
+    phase5_source_manifest_simple,
+    
+    phase5_figure_manifest |>
+      transmute(
+        source = paste0(
           phase,
           ": ",
-          figure_title
+          title
         ),
-      
-      resource_type =
-        "PNG figure",
-      
-      file_path =
-        figure_path,
-      
-      file_exists =
-        figure_exists,
-      
-      file_size_kb =
-        if_else(
-          figure_exists,
+        type = "PNG figure",
+        path,
+        exists,
+        size_kb = if_else(
+          exists,
           round(
             file.info(
-              figure_path
+              path
             )$size / 1024,
             2
           ),
           NA_real_
         )
-    )
-)
+      )
+  )
+}
 
 addWorksheet(
   phase5_workbook,
-  "Source Manifest",
-  gridLines = FALSE,
-  tabColour = uf_orange
+  "Sources",
+  gridLines = TRUE
 )
 
-mergeCells(
+write_sheet_title(
   phase5_workbook,
-  "Source Manifest",
-  cols = 1:5,
-  rows = 1
+  "Sources",
+  "Analysis Source Manifest"
 )
 
 writeData(
   phase5_workbook,
-  "Source Manifest",
-  "Authoritative Analysis Sources",
-  startRow = 1,
-  startCol = 1
-)
-
-addStyle(
-  phase5_workbook,
-  "Source Manifest",
-  title_style,
-  rows = 1,
-  cols = 1:5,
-  gridExpand = TRUE
-)
-
-writeDataTable(
-  phase5_workbook,
-  "Source Manifest",
-  phase5_source_manifest,
+  "Sources",
+  phase5_source_manifest_simple,
   startRow = 3,
   startCol = 1,
-  tableName = "tblSourceManifest",
-  tableStyle = "TableStyleMedium2",
-  withFilter = TRUE
+  colNames = TRUE,
+  headerStyle = column_header_style,
+  borders = "none"
 )
 
 addStyle(
   phase5_workbook,
-  "Source Manifest",
-  source_style,
+  "Sources",
+  body_style,
   rows = 4:(
     3 +
       nrow(
-        phase5_source_manifest
+        phase5_source_manifest_simple
       )
   ),
   cols = 1:5,
@@ -4463,123 +3946,131 @@ addStyle(
 
 setRowHeights(
   phase5_workbook,
-  "Source Manifest",
+  "Sources",
   rows = 4:(
     3 +
       nrow(
-        phase5_source_manifest
+        phase5_source_manifest_simple
       )
   ),
-  heights = 34
+  heights = 30
 )
 
 setColWidths(
   phase5_workbook,
-  "Source Manifest",
+  "Sources",
   cols = 1:5,
   widths = c(
-    48,
-    24,
-    105,
-    14,
-    16
+    45,
+    22,
+    95,
+    12,
+    14
   )
 )
 
 freezePane(
   phase5_workbook,
-  "Source Manifest",
+  "Sources",
   firstActiveRow = 4
 )
 
 
 # ------------------------------------------------------------------------------
-# 59. DEFINE WORKBOOK SHEET ORDER
-# ------------------------------------------------------------------------------
-
-desired_sheet_order <- c(
-  "Workbook Guide",
-  "Executive Summary",
-  "Cross-Phase Synthesis",
-  "Headline Metrics",
-  "Phase 4A Scale",
-  "Phase 4B Comfort",
-  "Phase 4C Usefulness",
-  "Phase 4D Preference",
-  "Figures",
-  "Source Manifest"
-)
-
-worksheetOrder(
-  phase5_workbook
-) <- match(
-  desired_sheet_order,
-  names(
-    phase5_workbook
-  )
-)
-
-
-# ------------------------------------------------------------------------------
-# 60. SAVE DRAFT WORKBOOK
+# 15. SAVE FINAL WORKBOOK ONCE
 # ------------------------------------------------------------------------------
 
 saveWorkbook(
   phase5_workbook,
-  phase5_draft_workbook_path,
+  phase5_final_workbook_path,
   overwrite = TRUE
 )
 
-if (
-  !file.exists(
-    phase5_draft_workbook_path
-  )
-) {
-  stop(
-    "The Phase 5 draft workbook was not created successfully."
-  )
-}
-
 
 # ------------------------------------------------------------------------------
-# 61. VERIFY SAVED WORKBOOK
+# 16. VERIFY WITHOUT REWRITING THE WORKBOOK
 # ------------------------------------------------------------------------------
 
-phase5_saved_workbook <- loadWorkbook(
-  phase5_draft_workbook_path
+expected_sheets <- c(
+  "Summary",
+  "Headline Metrics",
+  "Phase 4A",
+  "Phase 4B",
+  "Phase 4C",
+  "Phase 4D",
+  if (include_figures) "Figures",
+  "Sources"
 )
 
-phase5_workbook_sheet_check <- tibble(
-  sheet_number = seq_along(
-    names(
-      phase5_saved_workbook
-    )
+actual_sheets <- getSheetNames(
+  phase5_final_workbook_path
+)
+
+xlsx_contents <- unzip(
+  phase5_final_workbook_path,
+  list = TRUE
+)
+
+required_xlsx_parts <- c(
+  "[Content_Types].xml",
+  "xl/workbook.xml",
+  "xl/_rels/workbook.xml.rels"
+)
+
+validation <- tibble(
+  check = c(
+    "Workbook exists",
+    "Workbook size is greater than zero",
+    "Worksheet names and order are correct",
+    "Required XLSX components are present"
   ),
   
-  sheet_name = names(
-    phase5_saved_workbook
+  passed = c(
+    file.exists(
+      phase5_final_workbook_path
+    ),
+    
+    file.info(
+      phase5_final_workbook_path
+    )$size > 0,
+    
+    identical(
+      actual_sheets,
+      expected_sheets
+    ),
+    
+    all(
+      required_xlsx_parts %in%
+        xlsx_contents$Name
+    )
   )
-)
-
-cat(
-  "\nWORKBOOK SHEET CHECK\n"
 )
 
 print(
-  phase5_workbook_sheet_check,
-  n = Inf,
-  width = Inf
+  validation,
+  n = Inf
 )
 
+if (!all(validation$passed)) {
+  stop(
+    "At least one workbook validation check failed."
+  )
+}
+
 cat(
-  "\nDRAFT WORKBOOK CREATED\n",
-  "File: ",
-  phase5_draft_workbook_path,
+  "\nPHASE 5 SIMPLE WORKBOOK COMPLETE\n",
+  "File:\n",
+  phase5_final_workbook_path,
+  "\n\n",
+  "Worksheets: ",
+  length(
+    actual_sheets
+  ),
   "\n",
   "File size: ",
   round(
     file.info(
-      phase5_draft_workbook_path
+      phase5_final_workbook_path
     )$size / 1024 / 1024,
     2
   ),

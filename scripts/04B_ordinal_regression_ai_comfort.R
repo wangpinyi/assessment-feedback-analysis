@@ -1306,6 +1306,16 @@ standardize_probability_table <- function(emm_object) {
 uf_blue <- "#0021A5"
 uf_orange <- "#FA4616"
 
+awareness_caption_text <- stringr::str_wrap(
+  paste0(
+    "Predictions are from the final cumulative-link location-scale model. ",
+    "Feedback experience is held at its sample mean of 4.80, and prior AI ",
+    "experience is averaged using its observed sample distribution. ",
+    "Error bars represent 95% confidence intervals."
+  ),
+  width = 115
+)
+
 awareness_probability_plot_final <- ggplot(
   awareness_probability_final,
   aes(
@@ -1318,57 +1328,50 @@ awareness_probability_plot_final <- ggplot(
       ymin = confidence_low,
       ymax = confidence_high
     ),
-    width = 0.12,
-    linewidth = 0.8,
+    width = 0.10,
+    linewidth = 0.9,
     color = uf_blue
   ) +
   geom_point(
-    size = 4,
+    size = 3.8,
     color = uf_orange
   ) +
   geom_text(
     aes(
+      y = pmin(confidence_high + 0.03, 0.98),
       label = scales::percent(
         predicted_probability,
         accuracy = 1
       )
     ),
-    vjust = -1.2,
-    size = 4
+    vjust = 0,
+    size = 4.2
   ) +
   scale_y_continuous(
     limits = c(0, 1),
     breaks = seq(0, 1, 0.2),
     labels = scales::label_percent(
       accuracy = 1
+    ),
+    expand = expansion(
+      mult = c(0, 0.12)
     )
   ) +
   labs(
     title = stringr::str_wrap(
       "Adjusted Probability of Comfort With AI-Generated Feedback",
-      width = 62
+      width = 60
     ),
-    
     subtitle = stringr::str_wrap(
       paste0(
         "Probability of selecting Somewhat agree or Strongly agree, ",
         "by awareness that AI was used"
       ),
-      width = 90
+      width = 88
     ),
-    
     x = "Awareness That AI Was Used",
     y = "Predicted probability",
-    
-    caption = stringr::str_wrap(
-      paste0(
-        "Predictions are from the final cumulative-link location-scale model. ",
-        "Feedback experience is held at its sample mean of 4.80, and prior AI ",
-        "experience is averaged using its observed sample distribution. ",
-        "Error bars represent 95% confidence intervals."
-      ),
-      width = 120
-    )
+    caption = awareness_caption_text
   ) +
   coord_cartesian(
     clip = "off"
@@ -1380,7 +1383,18 @@ awareness_probability_plot_final <- ggplot(
     panel.grid.minor = element_blank(),
     
     axis.text.x = element_text(
-      size = 11
+      size = 11,
+      margin = margin(t = 4)
+    ),
+    
+    axis.title.x = element_text(
+      size = 12,
+      margin = margin(t = 8)
+    ),
+    
+    axis.title.y = element_text(
+      size = 12,
+      margin = margin(r = 8)
     ),
     
     plot.title.position = "plot",
@@ -1388,34 +1402,28 @@ awareness_probability_plot_final <- ggplot(
     
     plot.title = element_text(
       face = "bold",
-      size = 16,
+      size = 17,
       lineheight = 1.05,
-      margin = margin(
-        b = 6
-      )
+      margin = margin(b = 5)
     ),
     
     plot.subtitle = element_text(
       size = 11,
       lineheight = 1.08,
-      margin = margin(
-        b = 10
-      )
+      margin = margin(b = 12)
     ),
     
     plot.caption = element_text(
       size = 8.5,
       hjust = 0,
-      lineheight = 1.08,
-      margin = margin(
-        t = 10
-      )
+      lineheight = 1.1,
+      margin = margin(t = 12)
     ),
     
     plot.margin = margin(
-      t = 14,
+      t = 16,
       r = 24,
-      b = 18,
+      b = 20,
       l = 24
     )
   )

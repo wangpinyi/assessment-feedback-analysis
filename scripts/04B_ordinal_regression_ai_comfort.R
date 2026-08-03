@@ -1344,23 +1344,35 @@ awareness_probability_plot_final <- ggplot(
     )
   ) +
   labs(
-    title = "Adjusted Probability of Comfort With AI-Generated Feedback",
-    subtitle = paste0(
-      "Probability of selecting Somewhat agree or Strongly agree; ",
-      "feedback experience held at its mean and prior AI experience ",
-      "averaged over the observed sample distribution"
+    title = stringr::str_wrap(
+      "Adjusted Probability of Comfort With AI-Generated Feedback",
+      width = 62
     ),
+    
+    subtitle = stringr::str_wrap(
+      paste0(
+        "Probability of selecting Somewhat agree or Strongly agree, ",
+        "by awareness that AI was used"
+      ),
+      width = 90
+    ),
+    
     x = "Awareness That AI Was Used",
-    y = "Predicted probability"
-  ) +
-  labs(
-    caption = paste0(
-      "Predictions are from the final cumulative-link location-scale model. ",
-      "Feedback experience is held at its sample mean of 4.80, and prior AI ",
-      "experience is averaged using its observed sample distribution. ",
-      "Error bars represent 95% confidence intervals."
+    y = "Predicted probability",
+    
+    caption = stringr::str_wrap(
+      paste0(
+        "Predictions are from the final cumulative-link location-scale model. ",
+        "Feedback experience is held at its sample mean of 4.80, and prior AI ",
+        "experience is averaged using its observed sample distribution. ",
+        "Error bars represent 95% confidence intervals."
+      ),
+      width = 120
     )
-  )+
+  ) +
+  coord_cartesian(
+    clip = "off"
+  ) +
   theme_minimal(
     base_size = 12
   ) +
@@ -1371,20 +1383,40 @@ awareness_probability_plot_final <- ggplot(
       size = 11
     ),
     
+    plot.title.position = "plot",
+    plot.caption.position = "plot",
+    
     plot.title = element_text(
       face = "bold",
-      size = 16
+      size = 16,
+      lineheight = 1.05,
+      margin = margin(
+        b = 6
+      )
     ),
     
     plot.subtitle = element_text(
-      size = 11
+      size = 11,
+      lineheight = 1.08,
+      margin = margin(
+        b = 10
+      )
+    ),
+    
+    plot.caption = element_text(
+      size = 8.5,
+      hjust = 0,
+      lineheight = 1.08,
+      margin = margin(
+        t = 10
+      )
     ),
     
     plot.margin = margin(
-      10,
-      15,
-      10,
-      10
+      t = 14,
+      r = 24,
+      b = 18,
+      l = 24
     )
   )
 
@@ -2194,9 +2226,11 @@ ggsave(
     "phase4B_adjusted_probability_by_awareness.png"
   ),
   plot = awareness_probability_plot_final,
-  width = 9,
-  height = 6,
-  dpi = 300
+  width = 11,
+  height = 7.25,
+  units = "in",
+  dpi = 300,
+  bg = "white"
 )
 
 ggsave(
@@ -2205,8 +2239,10 @@ ggsave(
     "phase4B_adjusted_probability_by_awareness.pdf"
   ),
   plot = awareness_probability_plot_final,
-  width = 9,
-  height = 6
+  width = 11,
+  height = 7.25,
+  units = "in",
+  bg = "white"
 )
 
 ggsave(
